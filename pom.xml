@@ -80,11 +80,12 @@
 
   <modules>
     <!-- Junit4 modules -->
+<!--
     <module>randomized-runner</module>
     <module>junit4-ant</module>
     <module>junit4-maven-plugin</module>
     <module>junit4-maven-plugin-tests</module>
-
+-->
     <!-- Junit5 modules -->
     <module>randomized-runner-junit5</module>
     <module>junit5-ant</module>
@@ -92,9 +93,11 @@
     <module>junit5-maven-plugin-tests</module>
 
       <!-- Examples for Junit4 -->
-      <module>examples/maven</module>
-      <module>examples/ant</module>
-      <module>examples/security-manager</module>
+      <!--
+    <module>examples/maven</module>
+    <module>examples/ant</module>
+    <module>examples/security-manager</module>
+-->
 
       <!-- Examples for Junit5 -->
       <module>junit5-examples/maven</module>
