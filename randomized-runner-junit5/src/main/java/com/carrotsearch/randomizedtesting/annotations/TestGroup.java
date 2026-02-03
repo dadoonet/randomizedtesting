@@ -9,7 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Locale;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.SysGlobals;
 
 /**
@@ -18,7 +18,7 @@ import com.carrotsearch.randomizedtesting.SysGlobals;
  * mostly application-specific (example: {@link Nightly} which indicates slower, 
  * more intensive tests that are skipped during regular runs). 
  * 
- * <p>{@link RandomizedRunner} collects groups from all tests in a suite. A group
+ * <p>{@link RandomizedExtension} collects groups from all tests in a suite. A group
  * can be enabled or disabled using boolean system properties (or test 
  * hooks in the code). A test case is executed if it has no groups or if all of its groups
  * are enabled.

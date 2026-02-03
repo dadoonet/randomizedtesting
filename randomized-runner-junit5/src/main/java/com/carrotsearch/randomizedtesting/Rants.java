@@ -2,12 +2,13 @@ package com.carrotsearch.randomizedtesting;
 
 import java.lang.reflect.Method;
 
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
- * Rants about blocker limitations of JUnit...
+ * Historical rants about JUnit limitations. Many of these are resolved in JUnit 5,
+ * but this file is kept for reference.
  */
 final class Rants {
   enum RantType {
@@ -15,45 +16,41 @@ final class Rants {
     ANNOYANCE,
     DAMN_TERRIBLE,
     WTF,
+    RESOLVED_IN_JUNIT5,
 
     // Personal
     ISHOULDHAVEBECOMEALAWYER
   }
   
   /**
-   * This if freaking dumb... there's absolutely no way to carry test class/ test name
-   * separately from the display name, so we can't easily include seed info on the test
-   * case. If we do, Eclipse complains it cannot find the target class/ test name. If we don't,
-   * Eclipse's JUnit runner gets confused and doesn't show test case execution properly.
+   * JUnit 4 issue: there was no way to carry test class/test name
+   * separately from the display name.
    * 
-   * We can't even use a proxy or a subclass because Description has a private constructor. Eh.
-   * 
-   * Having a Description properly indicate the test case/ class is useful because we could re-run
-   * a concrete repetition of a given test from the UI. Currently this is impossible - we can
-   * re-run the entire iteration sequence only (or fix the seed on the method, but this requires
-   * changes to the code). 
+   * <p>JUnit 5 has better support for this with TestIdentifier and display names.
    */
-  public static RantType RANT_1 = RantType.DAMN_TERRIBLE;
+  public static RantType RANT_1 = RantType.RESOLVED_IN_JUNIT5;
   
   /**
-   * Default assumption methods (and constructors in AssumptionViolatedException)
-   * do not allow specifying a custom message? 
+   * JUnit 4 issue: Default assumption methods did not allow specifying a custom message.
+   * 
+   * <p>JUnit 5 Assumptions has better API.
    */
-  public static RantType RANT_2 = RantType.ANNOYANCE;
+  public static RantType RANT_2 = RantType.RESOLVED_IN_JUNIT5;
   
   /**
-   * Why is failed assumption propagated as a Failure? This is weird an unnatural.
+   * JUnit 4 issue: Failed assumption propagated as a Failure.
+   * 
+   * <p>JUnit 5 properly distinguishes between test failures and aborted tests.
    */
-  public static RantType RANT_3 = RantType.DAMN_TERRIBLE;
+  public static RantType RANT_3 = RantType.RESOLVED_IN_JUNIT5;
 
   /**
-   * JUnit is inconsistent in how it treats annotations on methods. Some of them are "inherited" and
+   * JUnit was inconsistent in how it treats annotations on methods. Some of them are "inherited" and
    * some require presence on the exact same {@link Method} as the one used for testing. This has awkward
-   * side effects, for example {@link Ignore} and {@link Test} must co-exist on the same method, not
-   * on virtual method hierarchy. You cannot make {@link Test} methods protected and publish them in 
-   * subclasses. Shadowing of {@link BeforeClass} methods is inconsistent (non-annotated shadowed method
-   * will not be called, shadowed method annotated with {@link BeforeClass} prevents the shadowed method 
-   * from being called), etc.
+   * side effects, for example {@link Disabled} and {@link Test} must co-exist on the same method, not
+   * on virtual method hierarchy. Shadowing of {@link BeforeAll} methods can be inconsistent.
+   * 
+   * <p>JUnit 5 has improved handling but some edge cases remain.
    */
-  public static RantType RANT_4 = RantType.DAMN_TERRIBLE;
+  public static RantType RANT_4 = RantType.ANNOYANCE;
 }

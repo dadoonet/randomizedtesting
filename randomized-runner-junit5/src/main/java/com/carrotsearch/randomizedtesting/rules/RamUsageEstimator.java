@@ -41,7 +41,7 @@ import java.util.*;
  * @see #shallowSizeOf(Object)
  * @see #shallowSizeOfInstance(Class)
  */
-final class RamUsageEstimator {
+public final class RamUsageEstimator {
   /**
    * JVM diagnostic features.
    */

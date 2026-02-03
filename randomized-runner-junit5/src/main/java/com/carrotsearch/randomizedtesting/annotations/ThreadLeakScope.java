@@ -6,8 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
@@ -15,8 +14,8 @@ import org.junit.Rule;
 public @interface ThreadLeakScope {
   public static enum Scope {
     /**
-     * No thread leaks from any individual test (including {@link Rule}s) or the
-     * entire suite (including {@link ClassRule}s).
+     * No thread leaks from any individual test (including extensions registered 
+     * via {@link RegisterExtension}) or the entire suite.
      */
     TEST,
 

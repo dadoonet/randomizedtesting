@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.carrotsearch.randomizedtesting.FilterExpressionParser.IContext;
 import com.carrotsearch.randomizedtesting.FilterExpressionParser.Node;
-import com.carrotsearch.randomizedtesting.RandomizedRunner.TestCandidate;
 import com.carrotsearch.randomizedtesting.annotations.TestGroup;
 
 /**
@@ -67,7 +66,7 @@ public final class GroupEvaluator {
         clazzes.add(testClass);
         annotations.addAll(Arrays.asList(testClass.getAnnotations()));
       }
-      annotations.addAll(Arrays.asList(c.method.getAnnotations()));
+      annotations.addAll(Arrays.asList(c.getMethod().getAnnotations()));
     }
 
     // Get TestGroup annotated annotations. 

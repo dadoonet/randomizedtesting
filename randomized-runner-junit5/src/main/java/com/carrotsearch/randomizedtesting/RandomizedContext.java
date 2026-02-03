@@ -10,7 +10,7 @@ import com.carrotsearch.randomizedtesting.annotations.Nightly;
 
 /**
  * Context variables for an execution of a test suite (hooks and tests) running
- * under a {@link RandomizedRunner}.
+ * under a {@link RandomizedExtension}.
  */
 public final class RandomizedContext {
   /** Coordination at global level. */
@@ -47,8 +47,11 @@ public final class RandomizedContext {
   /** @see #getTargetClass() */
   private final Class<?> suiteClass;
 
-  /** The runner to which we're bound. */
-  private final RandomizedRunner runner;
+  /** The runner's randomness. */
+  private final Randomness runnerRandomness;
+
+  /** Group evaluator. */
+  private GroupEvaluator groupEvaluator;
 
   /** The context and all of its resources are no longer usable. */
   private volatile boolean disposed;
@@ -61,11 +64,11 @@ public final class RandomizedContext {
   
   private Method currentMethod;
 
-  /** */
-  private RandomizedContext(ThreadGroup tg, Class<?> suiteClass, RandomizedRunner runner) {
+  /** Constructor for use with RandomizedExtension. */
+  private RandomizedContext(ThreadGroup tg, Class<?> suiteClass, Randomness runnerRandomness) {
     this.threadGroup = tg;
     this.suiteClass = suiteClass;
-    this.runner = runner;
+    this.runnerRandomness = runnerRandomness;
   }
 
   /** The class (suite) being tested. */
@@ -76,7 +79,12 @@ public final class RandomizedContext {
 
   /** Runner's seed. */
   long getRunnerSeed() {
-    return runner.runnerRandomness.getSeed();
+    return runnerRandomness.getSeed();
+  }
+
+  /** Get the runner's randomness. */
+  Randomness getRunnerRandomness() {
+    return runnerRandomness;
   }
 
   /**
@@ -135,13 +143,6 @@ public final class RandomizedContext {
   }
 
   /**
-   * Access to the runner governing this context.
-   */
-  public RandomizedRunner getRunner() {
-    return runner;
-  }
-  
-  /**
    * Dispose the given resource at the end of a given lifecycle scope. If the {@link Closeable}
    * throws an exception, the test case or suite will end in a failure.
    * 
@@ -163,7 +164,17 @@ public final class RandomizedContext {
    * Provide access to {@link GroupEvaluator}.
    */
   public GroupEvaluator getGroupEvaluator() {
-    return runner.groupEvaluator;
+    if (groupEvaluator == null) {
+      groupEvaluator = new GroupEvaluator(Collections.emptyList());
+    }
+    return groupEvaluator;
+  }
+
+  /**
+   * Set the group evaluator (used by RandomizedExtension).
+   */
+  void setGroupEvaluator(GroupEvaluator evaluator) {
+    this.groupEvaluator = evaluator;
   }
 
   /**
@@ -247,10 +258,9 @@ public final class RandomizedContext {
       if (context == null) {
         throw new IllegalStateException("No context information for thread: " +
             Threads.threadName(thread) + ". " +
-            "Is this thread running under a " +
-            RandomizedRunner.class + " runner context? Add @RunWith(" + RandomizedRunner.class + ".class)" +
-                " to your test class. Make sure your code accesses random contexts within "
-                + "@BeforeClass and @AfterClass boundary (for example, static test class initializers are "
+            "Is this thread running under @ExtendWith(" + RandomizedExtension.class.getSimpleName() + ".class)?" +
+                " Add the appropriate annotation to your test class. Make sure your code accesses random contexts within "
+                + "@BeforeAll and @AfterAll boundary (for example, static test class initializers are "
                 + "not permitted to access random contexts).");
       }
 
@@ -258,7 +268,7 @@ public final class RandomizedContext {
         if (!context.perThreadResources.containsKey(thread)) {
           PerThreadResources perThreadResources = new PerThreadResources();
           perThreadResources.randomnesses.push(
-              context.runner.runnerRandomness.clone(thread));
+              context.getRunnerRandomness().clone(thread));
           context.perThreadResources.put(thread, perThreadResources);
         }
       }
@@ -270,10 +280,9 @@ public final class RandomizedContext {
   /**
    * Create a new context bound to a thread group.
    */
-  static RandomizedContext create(ThreadGroup tg, Class<?> suiteClass, RandomizedRunner runner) {
-    assert Thread.currentThread().getThreadGroup() == tg;
+  static RandomizedContext create(ThreadGroup tg, Class<?> suiteClass, Randomness runnerRandomness) {
     synchronized (_globalLock) {
-      RandomizedContext ctx = new RandomizedContext(tg, suiteClass, runner); 
+      RandomizedContext ctx = new RandomizedContext(tg, suiteClass, runnerRandomness); 
       contexts.put(tg, ctx);
       ctx.perThreadResources.put(Thread.currentThread(), new PerThreadResources());
       return ctx;

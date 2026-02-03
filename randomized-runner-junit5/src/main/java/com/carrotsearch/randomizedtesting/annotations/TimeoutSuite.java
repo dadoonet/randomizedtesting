@@ -6,21 +6,21 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.rules.TestRule;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.Extension;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.SysGlobals;
 
 /**
  * Maximum execution time for an entire suite (including all hooks and tests).
- * Suite is defined as any class-scope {@link TestRule}s, {@link BeforeClass}
- * and {@link AfterClass} hooks, suite class's constructor, instance-scope
- * {@link TestRule}s, {@link Before} and {@link After} hooks and {@link Test}
+ * Suite is defined as any class-scope {@link Extension}s, {@link BeforeAll}
+ * and {@link AfterAll} hooks, suite class's constructor, instance-scope
+ * {@link Extension}s, {@link BeforeEach} and {@link AfterEach} hooks and {@link Test}
  * methods.
  * 
  * <p>
@@ -28,7 +28,7 @@ import com.carrotsearch.randomizedtesting.SysGlobals;
  * (if you have static initializers in your tests, get rid of them).
  * 
  * <p>
- * Overrides the global default {@link RandomizedRunner#DEFAULT_TIMEOUT} or a
+ * Overrides the global default {@link RandomizedExtension#DEFAULT_TIMEOUT} or a
  * system property override {@link SysGlobals#SYSPROP_TIMEOUT}.
  * 
  * @see Timeout

@@ -2,10 +2,10 @@ package com.carrotsearch.randomizedtesting;
 
 import java.util.Arrays;
 
-import org.junit.runner.Description;
+import org.junit.platform.launcher.TestIdentifier;
 
 import static com.carrotsearch.randomizedtesting.SysGlobals.*;
-import static com.carrotsearch.randomizedtesting.RandomizedRunner.*;
+import static com.carrotsearch.randomizedtesting.RandomizedRunnerConstants.*;
 
 // TODO: [GH-212]: how to provide better reproduce messages (especially with
 // external runner tasks that provide system properties, jvm options, etc?)
@@ -13,7 +13,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedRunner.*;
 /**
  * A builder for constructing "reproduce with" message.
  * 
- * @see #appendAllOpts(Description)
+ * @see #appendAllOpts(TestIdentifier)
  */
 public class ReproduceErrorMessageBuilder {
   private final StringBuilder b;
@@ -33,9 +33,9 @@ public class ReproduceErrorMessageBuilder {
    * -Doption="value"
    * </pre>
    * 
-   * @param description Suite or test description.
+   * @param testIdentifier Test identifier.
    */
-  public ReproduceErrorMessageBuilder appendAllOpts(Description description) {
+  public ReproduceErrorMessageBuilder appendAllOpts(TestIdentifier testIdentifier) {
     RandomizedContext ctx = null;
     try {
       ctx = RandomizedContext.current();
@@ -44,13 +44,18 @@ public class ReproduceErrorMessageBuilder {
       logger.warning("No context available when dumping reproduce options?");
     }
 
-    if (description.getClassName() != null) {
-      appendOpt(SYSPROP_TESTCLASS(), description.getClassName());
-    }
-
-    if (description.getMethodName() != null) {
-      appendOpt(SYSPROP_TESTMETHOD(), methodName(description));
-    }
+    testIdentifier.getSource().ifPresent(source -> {
+      if (source instanceof org.junit.platform.engine.support.descriptor.ClassSource) {
+        org.junit.platform.engine.support.descriptor.ClassSource classSource = 
+            (org.junit.platform.engine.support.descriptor.ClassSource) source;
+        appendOpt(SYSPROP_TESTCLASS(), classSource.getClassName());
+      } else if (source instanceof org.junit.platform.engine.support.descriptor.MethodSource) {
+        org.junit.platform.engine.support.descriptor.MethodSource methodSource = 
+            (org.junit.platform.engine.support.descriptor.MethodSource) source;
+        appendOpt(SYSPROP_TESTCLASS(), methodSource.getClassName());
+        appendOpt(SYSPROP_TESTMETHOD(), methodSource.getMethodName());
+      }
+    });
 
     appendRunnerProperties();
     appendTestGroupOptions(ctx);

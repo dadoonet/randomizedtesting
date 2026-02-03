@@ -19,9 +19,8 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import org.junit.Assume;
-import org.junit.AssumptionViolatedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.opentest4j.TestAbortedException;
 
 import com.carrotsearch.randomizedtesting.annotations.Listeners;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
@@ -38,7 +37,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomStrings;
  * @see Listeners
  * @see RandomizedContext
  */
-@RunWith(RandomizedRunner.class)
+@ExtendWith(RandomizedExtension.class)
 public class RandomizedTest {
   /**
    * The global multiplier property (Double).
@@ -705,14 +704,16 @@ public class RandomizedTest {
   }
 
   //
-  // Extensions of Assume (with a message).
+  // Extensions of Assumptions (with a message).
   //
 
   /**
-   * Making {@link Assume#assumeTrue(boolean)} directly available.
+   * Abort test if condition is false.
    */
   public static void assumeTrue(boolean condition) {
-    Assume.assumeTrue(condition);
+    if (!condition) {
+      throw new TestAbortedException("Assumption failed");
+    }
   }
 
   /**
@@ -723,15 +724,19 @@ public class RandomizedTest {
   }
 
   /**
-   * Making {@link Assume#assumeNotNull(Object...)} directly available.
+   * Abort test if any object is null.
    */
   public static void assumeNotNull(Object... objects) {
-    Assume.assumeNotNull(objects);
+    for (Object obj : objects) {
+      if (obj == null) {
+        throw new TestAbortedException("Assumption failed: expected non-null");
+      }
+    }
   }
 
   /**
    * @param condition
-   *          If <code>false</code> an {@link AssumptionViolatedException} is
+   *          If <code>false</code> a {@link TestAbortedException} is
    *          thrown by this method and the test case (should be) ignored (or
    *          rather technically, flagged as a failure not passing a certain
    *          assumption). Tests that are assumption-failures do not break
@@ -741,8 +746,7 @@ public class RandomizedTest {
    */
   public static void assumeTrue(String message, boolean condition) {
     if (!condition) {
-      // @see {@link Rants#RANT_2}.
-      throw new AssumptionViolatedException(message);
+      throw new TestAbortedException(message);
     }
   }
 
@@ -758,16 +762,17 @@ public class RandomizedTest {
    */
   public static void assumeNoException(String msg, Throwable t) {
     if (t != null) {
-      // This does chain the exception as the cause.
-      throw new AssumptionViolatedException(msg, t);
+      throw new TestAbortedException(msg, t);
     }
   }
   
   /**
-   * Making {@link Assume#assumeNoException(Throwable)} directly available.
+   * Abort test if exception is not null.
    */
   public static void assumeNoException(Throwable t) {
-    Assume.assumeNoException(t);
+    if (t != null) {
+      throw new TestAbortedException("Unexpected exception", t);
+    }
   }
 
   //

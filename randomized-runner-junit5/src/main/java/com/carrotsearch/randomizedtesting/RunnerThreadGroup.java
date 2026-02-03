@@ -1,5 +1,7 @@
 package com.carrotsearch.randomizedtesting;
 
+import static com.carrotsearch.randomizedtesting.RandomizedRunnerConstants.augmentStackTrace;
+
 /**
  * A {@link ThreadGroup} under which all tests (and hooks) are executed. Theoretically, there
  * should be no thread outside of this group's control.
@@ -17,7 +19,7 @@ final class RunnerThreadGroup extends ThreadGroup {
   public void uncaughtException(Thread t, Throwable e) {
     // Try to get the context for this thread and augment the exception with the seed.
     try {
-      e = RandomizedRunner.augmentStackTrace(e);
+      e = augmentStackTrace(e);
     } catch (IllegalArgumentException ignore) {
       // Very likely the randomized context has been destroyed. Don't try to augment the exception.
       e.addSuppressed(ignore);

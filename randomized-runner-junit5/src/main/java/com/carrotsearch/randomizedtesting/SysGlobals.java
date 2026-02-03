@@ -1,14 +1,12 @@
 package com.carrotsearch.randomizedtesting;
 
-import org.junit.runners.JUnit4;
-
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.annotations.Seeds;
-import com.carrotsearch.randomizedtesting.rules.RequireAssertionsRule;
+import com.carrotsearch.randomizedtesting.extensions.RequireAssertionsExtension;
 
 /**
- * Global names for system properties controlling the behavior of {@link JUnit4} ANT task
- * and {@link RandomizedRunner}.
+ * Global names for system properties controlling the behavior of JUnit 5 ANT task
+ * and {@link RandomizedExtension}.
  */
 public final class SysGlobals {
   /** System property passed to forked VMs: VM ID (sequential integer between 0 and the (number of concurrent jvms - 1)). */
@@ -192,7 +190,7 @@ public final class SysGlobals {
    * take precedence over the default timeout. This is useful for running debugging
    * sessions, for example, when default timeouts may be too short.
    * 
-   * @see RandomizedRunner#DEFAULT_TIMEOUT
+   * @see RandomizedRunnerConstants#DEFAULT_TIMEOUT
    */
   public static String SYSPROP_TIMEOUT() { return singleton().SYSPROP_TIMEOUT; }
 
@@ -205,7 +203,7 @@ public final class SysGlobals {
    * take precedence over the default timeout. This is useful for running debugging
    * sessions, for example, when default timeouts may be too short.
    * 
-   * @see RandomizedRunner#DEFAULT_TIMEOUT_SUITE
+   * @see RandomizedRunnerConstants#DEFAULT_TIMEOUT_SUITE
    */
   public static String SYSPROP_TIMEOUT_SUITE() { return singleton().SYSPROP_TIMEOUT_SUITE; }
 
@@ -220,7 +218,7 @@ public final class SysGlobals {
   /**
    * Returns the property name to express the desired status of assertions during tests.
    * 
-   * @see RequireAssertionsRule
+   * @see RequireAssertionsExtension
    */
   public static String SYSPROP_ASSERTS() { return singleton().SYSPROP_ASSERTS; } 
 

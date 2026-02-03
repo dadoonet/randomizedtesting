@@ -169,7 +169,7 @@ public final class AssertingRandom extends Random {
 
   static RuntimeException noSetSeed() {
     return new RuntimeException(
-        RandomizedRunner.class.getSimpleName() + 
+        RandomizedExtension.class.getSimpleName() + 
         " prevents changing the seed of its random generators to assure repeatability" +
         " of tests. If you need a mutable instance of Random, create a new (local) instance," +
         " preferably with the initial seed aquired from this Random instance."); 
