@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>randomizedtesting-examples-ant</artifactId>
-  <name>RandomizedTesting ANT Examples</name>
+  <name>RandomizedTesting JUnit4 ANT Examples</name>
 
   <description>
   Simple use-case examples meant to be included in some

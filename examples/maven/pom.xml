@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>randomizedtesting-examples</artifactId>
-  <name>RandomizedTesting Examples</name>
+  <name>RandomizedTesting JUnit4 Examples</name>
 
   <description>
   Simple use-case examples meant to be included in some

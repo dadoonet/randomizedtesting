@@ -9,8 +9,8 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <artifactId>randomizedtesting-security-manager-example</artifactId>
-  <name>RandomizedTesting JUnit4 Security Manager Example</name>
+  <artifactId>randomizedtesting-junit5-security-manager-example</artifactId>
+  <name>RandomizedTesting JUnit5 Security Manager Example</name>
 
   <description>
     Simple use-case running with security manager
@@ -23,14 +23,14 @@
   <dependencies>
     <dependency>
       <groupId>com.carrotsearch.randomizedtesting</groupId>
-      <artifactId>randomizedtesting-runner</artifactId>
+      <artifactId>randomizedtesting-runner-junit5</artifactId>
       <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>com.carrotsearch.randomizedtesting</groupId>
-      <artifactId>junit4-ant</artifactId>
+      <artifactId>junit5-ant</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -105,8 +105,8 @@
               <exportAntProperties>true</exportAntProperties>
               <tasks>
                 <makeurl file="${junit:junit:jar}" property="junit.jar.url"/>
-                <makeurl file="${com.carrotsearch.randomizedtesting:junit4-ant:jar}" property="junit4.jar.url"/>
-                <makeurl file="${com.carrotsearch.randomizedtesting:randomizedtesting-runner:jar}" property="randomizedtesting.jar.url"/>
+                <makeurl file="${com.carrotsearch.randomizedtesting:junit5-ant:jar}" property="junit5.jar.url"/>
+                <makeurl file="${com.carrotsearch.randomizedtesting:randomizedtesting-runner-junit5:jar}" property="randomizedtesting.jar.url"/>
               </tasks>
             </configuration>
           </execution>
@@ -127,7 +127,7 @@
               <rules>
                 <requireProperty>
                   <property>junit.jar.url</property>
-                  <property>junit4.jar.url</property>
+                  <property>junit5.jar.url</property>
                   <property>randomizedtesting.jar.url</property>
                 </requireProperty>
               </rules>
@@ -136,16 +136,16 @@
         </executions>
       </plugin>
 
-      <!-- Run tests with JUnit4 under security manager -->
+      <!-- Run tests with JUnit5 under security manager -->
       <plugin>
         <groupId>com.carrotsearch.randomizedtesting</groupId>
-        <artifactId>junit4-maven-plugin</artifactId>
+        <artifactId>junit5-maven-plugin</artifactId>
         <version>${project.version}</version>
         <executions>
           <execution>
-            <id>junit4-tests</id>
+            <id>junit5-tests</id>
             <goals>
-              <goal>junit4</goal>
+              <goal>junit5</goal>
             </goals>
             <!-- run in integration-test phase, so jars are "like production" for permission -->
             <phase>${securitymanager.test.phase}</phase>
@@ -186,7 +186,7 @@
                 <param>-Djava.security.policy==${project.basedir}/security.policy</param>
                 <param>-Djava.security.debug=all</param>
                 <param>-Djunit.jar.url=${junit.jar.url}</param>
-                <param>-Djunit4.jar.url=${junit4.jar.url}</param>
+                <param>-Djunit5.jar.url=${junit5.jar.url}</param>
                 <param>-Drandomizedtesting.jar.url=${randomizedtesting.jar.url}</param>
               </jvmArgs>
             </configuration>

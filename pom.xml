@@ -91,9 +91,15 @@
     <module>junit5-maven-plugin</module>
     <module>junit5-maven-plugin-tests</module>
 
-    <module>examples/maven</module>
-    <module>examples/ant</module>
-    <module>examples/security-manager</module>
+      <!-- Examples for Junit4 -->
+      <module>examples/maven</module>
+      <module>examples/ant</module>
+      <module>examples/security-manager</module>
+
+      <!-- Examples for Junit5 -->
+      <module>junit5-examples/maven</module>
+      <module>junit5-examples/ant</module>
+      <module>junit5-examples/security-manager</module>
   </modules>
 
   <dependencyManagement>
