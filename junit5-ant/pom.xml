@@ -1,0 +1,311 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.carrotsearch.randomizedtesting</groupId>
+    <artifactId>randomizedtesting-parent</artifactId>
+    <version>2.8.4-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>junit5-ant</artifactId>
+  <name><![CDATA[RandomizedTesting JUnit5 ANT Task]]></name>
+
+  <properties>
+    <shade.target.package>com.carrotsearch.ant.tasks.junit5.dependencies</shade.target.package>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant-junit</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Required at runtime -->
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <type>jar</type>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Embedded into standalone JAR (shaded). -->
+
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.carrotsearch.thirdparty</groupId>
+      <artifactId>simple-xml-safe</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.carrotsearch.randomizedtesting</groupId>
+      <artifactId>randomizedtesting-runner-junit5</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${version.maven-surefire-plugin}</version>
+
+          <configuration>
+            <basedir>${project.build.directory}/test-classes</basedir>
+            <!-- only include non-integration tests. -->
+            <excludes>
+              <exclude>**/tests/**</exclude>
+              <exclude>**/it/**</exclude>
+            </excludes>
+          </configuration>
+
+          <!-- Run in the integration tests phase only. -->
+          <executions>
+            <execution>
+              <id>surefire-it</id>
+              <phase>integration-test</phase>
+              <goals>
+                <goal>test</goal>
+              </goals>
+              <configuration>
+                <skipTests>${skipTests}</skipTests>
+                <includes>
+                   <include>**/it/Test*.java</include>
+                </includes>
+                <excludes>
+                  <exclude>**/tests/**</exclude>
+                </excludes>
+                <classesDirectory>${project.build.directory}/dontinclude</classesDirectory>
+                <classpathDependencyExcludes>
+                    <classpathDependencyExcludes>com.carrotsearch.randomizedtesting:randomizedtesting-runner-junit5</classpathDependencyExcludes>
+                    <classpathDependencyExcludes>com.google.guava:guava</classpathDependencyExcludes>
+                </classpathDependencyExcludes>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <versionRange>[1.0.0,)</versionRange>
+                    <goals>
+                      <goal>copy-dependencies</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${version.maven-javadoc-plugin}</version>
+          <configuration>
+            <overview>${basedir}/src/main/java/com/carrotsearch/ant/tasks/junit5/package.html</overview>
+            <groups>
+              <group>
+                <title>JUnit5 ANT task</title>
+                <packages>com.carrotsearch.ant.tasks.junit5*</packages>
+              </group>
+              <group>
+                <title>Listeners and report writers</title>
+                <packages>com.carrotsearch.ant.tasks.junit5.listeners*</packages>
+              </group>
+              <group>
+                <title>Load balancers</title>
+                <packages>com.carrotsearch.ant.tasks.junit5.balancers*</packages>
+              </group>
+              <group>
+                <title>Events and aggregated events for reports</title>
+                <packages>com.carrotsearch.ant.tasks.junit5.events*</packages>
+              </group>
+            </groups>
+            <header><![CDATA[<div id='header'><a class='logo' target='_top' href='https://labs.carrotsearch.com'></a>${project.name} v${project.version} <br>API Documentation</div>]]></header>
+            <excludePackageNames>com.carrotsearch.ant.tasks.junit5.forked</excludePackageNames>
+          </configuration>
+        </plugin>        
+      </plugins>          
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>de.thetaphi</groupId>
+        <artifactId>forbiddenapis</artifactId>
+      </plugin>
+    
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <includeGroupIds>com.carrotsearch.randomizedtesting,junit,org.hamcrest,org.ow2.asm</includeGroupIds>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <forceCreation>true</forceCreation>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <artifactSet>
+                <includes>
+                  <include>com.google.guava:guava</include>
+                  <include>com.google.guava:failureaccess</include>
+                  <include>org.ow2.asm:asm</include>
+                  <include>com.carrotsearch.thirdparty:simple-xml-safe</include>
+                  <include>com.carrotsearch.randomizedtesting:randomizedtesting-runner-junit5</include>
+                </includes>
+              </artifactSet>
+              <filters>
+                <filter>
+                  <artifact>com.google.guava:guava</artifact>
+                  <excludes>
+                    <exclude>com/google/common/eventbus/SynchronizedEventHandler.class</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>org.ow2.asm:asm</artifact>
+                  <excludes>
+                    <exclude>module-info.class</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <relocations>
+                <relocation>
+                  <pattern>com.google</pattern>
+                  <shadedPattern>${shade.target.package}.com.google</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.objectweb</pattern>
+                  <shadedPattern>${shade.target.package}.org.objectweb</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.simpleframework</pattern>
+                  <shadedPattern>${shade.target.package}.org.simpleframework</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.carrotsearch.randomizedtesting</pattern>
+                  <shadedPattern>${shade.target.package}.com.carrotsearch.randomizedtesting</shadedPattern>
+                </relocation>
+              </relocations>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"/>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+
+    <resources>
+        <resource>
+            <directory>src/main/resources</directory>
+            <excludes>
+              <exclude>**/*.jsonp</exclude>
+              <exclude>**/ideas.txt</exclude>
+            </excludes>
+        </resource>
+    </resources>
+  </build>
+
+  <profiles>
+    <!-- Skip flaky integration tests on JDK 9+ due to stream capture issues -->
+    <profile>
+      <id>jdk9-skip-flaky-it</id>
+      <activation>
+        <jdk>[9,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <executions>
+                <execution>
+                  <id>surefire-it</id>
+                  <configuration>
+                    <excludes>
+                      <exclude>**/tests/**</exclude>
+                      <!-- Skip tests that rely on forked JVM output capture -->
+                      <exclude>**/it/TestReplication.java</exclude>
+                      <exclude>**/it/TestTextReport.java</exclude>
+                      <exclude>**/it/TestAntXmlReport.java</exclude>
+                      <exclude>**/it/TestSecuritySandbox.java</exclude>
+                    </excludes>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
+</project>
+

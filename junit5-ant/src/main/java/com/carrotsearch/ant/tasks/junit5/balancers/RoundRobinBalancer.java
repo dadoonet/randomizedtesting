@@ -1,0 +1,28 @@
+package com.carrotsearch.ant.tasks.junit5.balancers;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import com.carrotsearch.ant.tasks.junit5.JUnit5;
+import com.carrotsearch.ant.tasks.junit5.SuiteBalancer;
+
+/**
+ * A round-robin suite balancer (default for non-assigned suites).
+ */
+public class RoundRobinBalancer implements SuiteBalancer {
+ 
+  @Override
+  public List<Assignment> assign(Collection<String> suiteNames, int forkedJvmCount, long seed) {
+    List<Assignment> result = new ArrayList<>();
+    int i = 0;
+    for (String suite : suiteNames) {
+      result.add(new Assignment(suite, i++, 0));
+      if (i >= forkedJvmCount) i = 0;
+    }
+    return result;
+  }
+
+  @Override
+  public void setOwner(JUnit5 owner) {}
+}

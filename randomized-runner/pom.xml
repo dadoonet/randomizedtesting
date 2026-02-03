@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>randomizedtesting-runner</artifactId>
-  <name>RandomizedTesting Randomized Runner</name>
+  <name>RandomizedTesting JUnit4 Randomized Runner</name>
 
   <dependencies>
     <dependency>

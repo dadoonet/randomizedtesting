@@ -1,0 +1,1569 @@
+
+<project name="junit5" default="statuses" xmlns:junit5="antlib:com.carrotsearch.junit5">
+    <property name="native.libs" location="${basedir}/../../src/native/lib" />
+
+    <path id="junit.classpath">
+        <fileset dir="..">
+            <include name="dependency/junit-*.jar" />
+            <include name="dependency/hamcrest-*.jar" />
+        </fileset>
+    </path>
+
+    <path id="tests.classpath">
+        <path location="." />
+        <path refid="junit.classpath" />
+    </path>
+
+    <taskdef uri="antlib:com.carrotsearch.junit5">
+        <classpath refid="junit.classpath" />
+        <classpath>
+            <fileset dir=".." id="fileset.junit5">
+                <filename regex="junit5\-ant\-([0-9]|\.)+(-SNAPSHOT)?.jar" />
+            </fileset>
+        </classpath>
+    </taskdef>
+
+    <presetdef name="junit5.preconf">
+        <junit5:junit5 haltonfailure="true" parallelism="1" shuffleOnForkedJvm="true" onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+
+            <listeners>
+                <junit5:report-text 
+                    showThrowable="true" 
+                    showStackTraces="true" 
+                    showOutput="always"
+
+                    showStatusOk="true" 
+                    showStatusError="true" 
+                    showStatusFailure="true" 
+                    showStatusIgnored="true"
+
+                    showSuiteSummary="true" 
+                />
+            </listeners>
+        </junit5:junit5>
+    </presetdef>
+
+    <!-- Targets below are connected with test cases. -->
+    <target name="sourcesuites">
+        <junit5.preconf>
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}/../../src/test/java">
+                <include name="**/TestSuccess.java" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="sysstreams">
+        <junit5.preconf>
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestSysstreams.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="nojunit">
+        <junit5:junit5 onNonEmptyWorkDirectory="wipe">
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestSysstreams.class" />
+            </fileset>
+        </junit5:junit5>
+    </target>
+
+    <target name="oldjunit">
+        <junit5:junit5 onNonEmptyWorkDirectory="wipe">
+            <classpath>
+                <path location="." />
+                <fileset dir="${basedir}/../.." includes="lib/junit*.jar" />
+            </classpath>
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestStatuses.class" />
+            </fileset>
+        </junit5:junit5>
+    </target>
+
+    <target name="statuses">
+        <junit5.preconf debugstream="true">
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestStatuses.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="ignoredSuite">
+        <junit5.preconf>
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestIgnoredSuite.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="beforeClassError">
+        <junit5.preconf>
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestBeforeClassError.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="afterClassError">
+        <junit5.preconf>
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestAfterClassError.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="hierarchicalSuiteDescription">
+        <junit5.preconf>
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestHierarchicalSuiteDescription.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="dir">
+        <delete dir="empty" failonerror="false" />
+        <mkdir dir="empty" />
+
+        <junit5.preconf dir="empty" leaveTemporary="true">
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestDir.class" />
+            </fileset>
+        </junit5.preconf>
+
+        <fail message="Expected marker file to appear at ${basedir}/empty/S0/touch.me">
+            <condition>
+                <not>
+                    <available file="empty/J0/touch.me" type="file" />
+                </not>
+            </condition>
+        </fail>
+
+        <junit5.preconf dir="empty" isolateWorkingDirectories="false">
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestDir.class" />
+            </fileset>
+        </junit5.preconf>
+
+        <fail message="Expected marker file to appear.">
+            <condition>
+                <not>
+                    <available file="empty/touch.me" type="file" />
+                </not>
+            </condition>
+        </fail>
+    </target>
+
+    <target name="onNonEmptyWorkDirectory-fail">
+        <delete dir="empty" failonerror="false" />
+        <touch file="empty/J0/existing-dir/garbage.txt" mkdirs="true" />
+
+        <!-- the default behavior (fail) -->
+        <junit5.preconf dir="empty" onNonEmptyWorkDirectory="fail">
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestDir.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="onNonEmptyWorkDirectory-wipe">
+      <delete dir="empty" failonerror="false" />
+      <touch file="empty/J0/existing-dir/garbage.txt" mkdirs="true" />
+
+      <junit5.preconf dir="empty" leaveTemporary="false" onNonEmptyWorkDirectory="wipe">
+          <fileset dir="${basedir}">
+              <include name="**/tests/TestDir.class" />
+          </fileset>
+      </junit5.preconf>
+
+      <fail message="Expected garbage file to be deleted.">
+          <condition>
+            <available file="empty/J0/existing-dir" type="dir" />
+          </condition>
+      </fail>
+    </target>
+
+    <target name="onNonEmptyWorkDirectory-ignore">
+      <delete dir="empty" failonerror="false" />
+      <touch file="empty/J0/existing-dir/garbage.txt" mkdirs="true" />
+
+      <junit5.preconf dir="empty" leaveTemporary="true" onNonEmptyWorkDirectory="ignore">
+        <fileset dir="${basedir}">
+            <include name="**/tests/TestDir.class" />
+        </fileset>
+      </junit5.preconf>
+
+      <fail message="Expected garbage file to stay untouched.">
+        <condition>
+          <not>
+            <available file="empty/J0/existing-dir/garbage.txt" type="file" />
+          </not>
+        </condition>
+      </fail>
+    </target>
+
+    <target name="onNonEmptyWorkDirectory-tmpDirUnderCwd">
+      <delete dir="empty" failonerror="false" />
+      <mkdir  dir="empty/J0/temp" />
+
+      <junit5.preconf dir="empty"
+                      tempdir="./temp-junit5"
+                      leaveTemporary="true"
+                      onNonEmptyWorkDirectory="wipe">
+
+        <sysproperty key="java.io.tmpdir" value="./temp" /> 
+
+        <fileset dir="${basedir}">
+          <include name="**/tests/TestCreateTmpFile.class" />
+        </fileset>
+      </junit5.preconf>
+    </target>
+
+    <target name="maxmem">
+        <junit5.preconf maxmemory="100m">
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestMaxMem.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="jvmarg">
+        <junit5.preconf>
+            <jvmarg value="-Xmx100m" />
+            <jvmarg value="-Dtest.param=foobar" />
+
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestMaxMem.class" />
+                <include name="**/tests/TestJvmArg.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="sysproperty">
+        <junit5.preconf>
+            <sysproperty key="test.param" value="foobar" />
+
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestJvmArg.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="env">
+        <junit5.preconf>
+            <env key="env.variable" value="foobar" />
+
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestEnvVar.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="failureProperty">
+        <junit5.preconf haltonfailure="false">
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestStatuses.class" />
+            </fileset>
+        </junit5.preconf>
+
+        <junit5.preconf haltonfailure="false" failureProperty="tests.failed">
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestStatuses.class" />
+            </fileset>
+        </junit5.preconf>
+
+        <fail message="Expected failure property to be set.">
+            <condition>
+                <not>
+                    <isset property="tests.failed" />
+                </not>
+            </condition>
+        </fail>
+    </target>
+
+    <target name="failureTypePassing">
+        <junit5.preconf haltonfailure="false">
+            <classpath>
+                <fileset dir=".." includes="dependency/asm*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestFailureTypePassing.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="jvmcrash">
+        <echo>${native.libs}</echo>
+        <junit5.preconf jvmOutputAction="pipe,fail">
+            <jvmarg value="-Djava.library.path=${native.libs}" />
+
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestJvmCrash.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="antxml">
+        <delete dir="ant-xmls" failonerror="false" />
+        <mkdir dir="ant-xmls" />
+
+        <junit5:junit5 
+          onNonEmptyWorkDirectory="wipe"
+            haltonfailure="false" 
+            uniqueSuiteNames="false"
+            parallelism="3">
+
+            <classpath refid="tests.classpath" />
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <listeners>
+                <junit5:report-ant-xml dir="ant-xmls">
+                    <!--
+                    <tokenfilter>
+                      <replaceregex pattern="" replace="" flags="gi" />
+                    </tokenfilter>
+                    -->
+                </junit5:report-ant-xml>
+            </listeners>
+
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestStatuses.class" />
+                <include name="**/tests/TestSysstreams.class" />
+                <include name="**/tests/TestIgnoredSuite.class" />
+                <include name="**/tests/TestBeforeClassError.class" />
+                <include name="**/tests/TestHierarchicalSuiteDescription.class" />
+                <include name="**/tests/TestInvalidUtfCharacter.class" />
+                <include name="**/TestSuiteReplicated.class" />
+            </fileset>
+        </junit5:junit5>
+    </target>
+
+    <target name="antxml-summary">
+      <delete dir="ant-xmls2" failonerror="false" />
+      <mkdir dir="ant-xmls2" />
+
+      <junit5:junit5 haltonfailure="false" onNonEmptyWorkDirectory="wipe">
+          <classpath refid="tests.classpath" />
+
+          <listeners>
+              <junit5:report-ant-xml dir="ant-xmls2" summaryFile="ant-xmls2/summary1.xml">
+              </junit5:report-ant-xml>
+          </listeners>
+
+          <fileset dir="${basedir}">
+              <include name="**/tests/TestStatuses.class" />
+              <include name="**/tests/TestIgnoredSuite.class" />
+          </fileset>
+      </junit5:junit5>
+
+      <junit5:junit5 haltonfailure="false" onNonEmptyWorkDirectory="wipe">
+          <classpath refid="tests.classpath" />
+          <classpath>
+              <fileset dir=".." includes="dependency/randomized*.jar" />
+          </classpath>
+
+          <listeners>
+              <junit5:report-ant-xml dir="ant-xmls2" summaryFile="ant-xmls2/summary2.xml">
+              </junit5:report-ant-xml>
+          </listeners>
+
+          <fileset dir="${basedir}">
+              <include name="**/tests/TestSuccess.class" />
+          </fileset>
+      </junit5:junit5>
+      
+      <junit5:junit5 haltonfailure="false" onNonEmptyWorkDirectory="wipe">
+          <classpath refid="tests.classpath" />
+
+          <listeners>
+              <junit5:report-ant-xml dir="ant-xmls2" summaryFile="ant-xmls2/summary3.xml">
+              </junit5:report-ant-xml>
+          </listeners>
+
+          <fileset dir="${basedir}">
+              <include name="**/tests/TestIgnoredSuite.class" />
+          </fileset>
+      </junit5:junit5>      
+    </target>
+
+    <target name="json">
+        <delete dir="json" failonerror="false" />
+        <mkdir dir="json" />
+
+        <junit5:junit5 haltonfailure="false" onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+
+            <listeners>
+                <junit5:report-json file="json/report.json" />
+                <junit5:report-json jsonpMethod="callbackMethod" file="json/report.jsonp" />
+                <junit5:report-json file="json/output.html" projectName="Nice project" />
+            </listeners>
+
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestStatuses.class" />
+                <include name="**/tests/TestSysstreams.class" />
+                <include name="**/tests/TestIgnoredSuite.class" />
+                <include name="**/tests/TestBeforeClassError.class" />
+                <include name="**/tests/TestHierarchicalSuiteDescription.class" />
+                <include name="**/tests/EscapeSequences.class" />
+            </fileset>
+        </junit5:junit5>
+    </target>
+
+    <target name="classfilter">
+        <local name="tests.class" />
+        <property name="tests.class" value="*Statuses" />
+        <junit5.preconf haltonfailure="false">
+            <fileset dir="${basedir}">
+                <include name="**/tests/Test*.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="methodfilter">
+        <local name="tests.class" />
+        <local name="tests.method" />
+        <property name="tests.class" value="*Statuses" />
+        <property name="tests.method" value="ignored*" />
+        <junit5.preconf haltonfailure="false">
+            <fileset dir="${basedir}">
+                <include name="**/tests/Test*.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="filterexpression">
+        <echo>${basedir}</echo>
+        <junit5.preconf haltonfailure="false">
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+        
+            <sysproperty key="tests.filter" value="@foo and not @bar" />
+
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestFilteringExpressions$Example*.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+        </junit5.preconf>
+    </target>
+
+    <target name="nojunit-task">
+        <taskdef name="junit5-nojunit" classname="com.carrotsearch.ant.tasks.junit5.JUnit5">
+            <classpath>
+                <fileset refid="fileset.junit5" />
+            </classpath>
+        </taskdef>
+
+        <junit5-nojunit>
+            <classpath refid="tests.classpath" />
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestStatuses.class" />
+            </fileset>
+        </junit5-nojunit>
+    </target>
+
+    <target name="oldjunit-task">
+        <taskdef name="junit5-oldjunit" classname="com.carrotsearch.ant.tasks.junit5.JUnit5">
+            <classpath>
+                <fileset dir="../..">
+                    <include name="lib/junit-4.9.jar" />
+                </fileset>
+                <fileset refid="fileset.junit5" />
+            </classpath>
+        </taskdef>
+
+        <junit5-oldjunit>
+            <classpath refid="tests.classpath" />
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestStatuses.class" />
+            </fileset>
+        </junit5-oldjunit>
+    </target>
+
+    <target name="escaping">
+        <delete dir="empty" failonerror="false" />
+        <mkdir dir="empty" />
+
+        <junit5.preconf dir="empty">
+            <sysproperty key="sysprop.key" value="${nonexistent-1}" />
+            <sysproperty key="sysprop.key2" value="abc def" />
+            <jvmarg value="-Dsysprop.key3=%PATH%" />
+            <env key="env.variable" value="${nonexistent-3}" />
+
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestEscaping.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="seedpassing">
+        <junit5.preconf seed="[DEADBEEF:CAFEBABE]">
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestSeedPassing.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="seedpassing.invalid">
+        <junit5.preconf seed="invalid">
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestSeedPassing.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="reproducestring">
+        <junit5.preconf haltonfailure="false">
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestReproduceString.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="assertions">
+        <junit5.preconf>
+            <fileset dir="${basedir}">
+                <include name="**/tests/sub1/TestAssertions.class" />
+            </fileset>
+
+            <assertions>
+                <enable package="com.carrotsearch.ant.tasks.junit5.tests.sub1" />
+            </assertions>
+        </junit5.preconf>
+    </target>
+
+    <target name="balancing">
+        <delete dir="${basedir}" includes="hints*.log" excludes="hints-fixed.log" />
+        <junit5.preconf parallelism="2">
+            <fileset dir="${basedir}">
+                <include name="**/tests/sub2/Test*.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-execution-times file="${basedir}/hints.log" historyLength="5" />
+            </listeners>
+
+            <balancers>
+                <junit5:execution-times>
+                    <fileset dir="${basedir}" includes="hints*.log" />
+                </junit5:execution-times>
+            </balancers>
+        </junit5.preconf>
+
+        <fail message="Expected hints file to appear.">
+            <condition>
+                <not>
+                    <available file="${basedir}/hints.log" type="file" />
+                </not>
+            </condition>
+        </fail>
+    </target>
+
+    <target name="balancing_nohints">
+        <junit5.preconf parallelism="2">
+            <fileset dir="${basedir}">
+                <include name="**/tests/sub2/Test*.class" />
+            </fileset>
+
+            <balancers>
+                <junit5:execution-times>
+                    <fileset dir="${basedir}" includes="nohints*.log" />
+                </junit5:execution-times>
+            </balancers>
+        </junit5.preconf>
+    </target>
+
+    <target name="alt-vendor">
+        <fail unless="jvm.exec">jvm.exec property must be set.</fail>
+        <junit5.preconf parallelism="1" leaveTemporary="true" jvm="${jvm.exec}">
+            <fileset dir="${basedir}">
+                <include name="**/tests/TestStatuses.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="notaclass">
+        <junit5.preconf>
+            <fileset dir="${basedir}">
+                <include name="junit5.xml" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="notinstantiable">
+        <junit5.preconf>
+            <fileset dir="${basedir}">
+                <include name="**/tests/NotInstantiable.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="customprefix">
+        <local name="blah.class" />
+        <property name="blah.class" value="*Statuses" />
+        <property name="blah.seed" value="deadbeef" />
+        <junit5.preconf haltonfailure="false" prefix="blah">
+            <fileset dir="${basedir}">
+                <include name="**/tests/Test*.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="cwdconflict">
+        <junit5.preconf haltonfailure="true" parallelism="2">
+            <fileset dir="${basedir}">
+                <include name="**/CwdConflict*.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="forkedjvmhanging">
+        <junit5.preconf haltonfailure="false" parallelism="1">
+            <fileset dir="${basedir}">
+                <include name="**/ForkedJvmHanging*.class" />
+                <exclude name="**/*$*" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="outofordersysouts">
+        <junit5.preconf haltonfailure="true" parallelism="1">
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}">
+                <include name="**/OutOfOrderSysouts.class" />
+                <exclude name="**/*$*" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="mergehints">
+        <junit5.preconf parallelism="4">
+            <fileset dir="${basedir}">
+                <include name="**/tests/sub2/Test*.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-execution-times file="${basedir}/hints-1.log" />
+                <junit5:report-execution-times file="${basedir}/hints-2.log" />
+                <junit5:report-execution-times file="${basedir}/hints-3.log" />
+            </listeners>
+        </junit5.preconf>
+
+        <junit5:mergehints file="${basedir}/hints-merged.log" historyLength="3">
+            <fileset dir="${basedir}" includes="hints-?.log" />
+        </junit5:mergehints>
+
+        <junit5:tophints max="3">
+            <fileset dir="${basedir}" includes="hints-merged.log" />
+        </junit5:tophints>
+    </target>
+
+    <target name="staticScopeOutput">
+        <junit5:junit5 onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+
+            <fileset dir="${basedir}">
+                <include name="**/TestStaticScopeOutput.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+                <junit5:report-json file="json/static-scope.json" />
+            </listeners>
+        </junit5:junit5>
+    </target>
+
+    <target name="iters">
+        <junit5.preconf haltonfailure="true">
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+            <sysproperty key="tests.iters" value="5" />
+            <fileset dir="${basedir}">
+                <include name="**/TestSuccess.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="junitcompat1">
+        <junit5.preconf fork="true" forkmode="once" haltonerror="true" errorproperty="dummy" filtertrace="yes" timeout="60" includeantruntime="true" showoutput="yes" outputtoformatters="true" reloading="true" clonevm="true" logfailedtests="true" enableTestListenerEvents="true">
+            <formatter type="plain" />
+        </junit5.preconf>
+    </target>
+
+    <target name="junitcompat2">
+        <junit5.preconf>
+            <test name="my.test.TestCase" haltonfailure="no" outfile="result">
+                <formatter type="xml" />
+            </test>
+
+            <batchtest fork="yes" todir="${reports.tests}">
+                <fileset dir="${src.tests}">
+                    <include name="**/*Test*.java" />
+                    <exclude name="**/AllTests.java" />
+                </fileset>
+            </batchtest>
+        </junit5.preconf>
+    </target>
+
+    <target name="junitcompat3">
+        <junit5.preconf>
+            <batchtest fork="yes" todir="${reports.tests}">
+                <fileset dir="${src.tests}">
+                    <include name="**/*Test*.java" />
+                    <exclude name="**/AllTests.java" />
+                </fileset>
+            </batchtest>
+        </junit5.preconf>
+    </target>
+
+    <target name="suiteerror">
+        <junit5:junit5 haltonfailure="false" onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+
+            <listeners>
+                <junit5:report-text showStatusOk="false" />
+            </listeners>
+
+            <fileset dir="${basedir}">
+                <include name="**/FailInAfterClass.class" />
+            </fileset>
+        </junit5:junit5>
+    </target>
+
+    <target name="reasonForSuiteAssumptionIgnored">
+        <junit5:junit5 onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}">
+                <include name="**/ReasonForAssumptionIgnored$*.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+        </junit5:junit5>
+    </target>
+
+    <target name="reasonForIgnored">
+        <junit5:junit5 onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}">
+                <include name="**/ReasonForIgnored$*.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+        </junit5:junit5>
+    </target>
+
+    <target name="reasonForIgnoredByDisabledGroup">
+        <junit5:junit5 onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}">
+                <include name="**/ReasonForIgnoredByDisabledGroup.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+        </junit5:junit5>
+    </target>
+    
+    
+
+    <target name="jvmverbose">
+        <junit5:junit5 haltonfailure="false" onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+
+            <jvmarg value="-verbose:class" />
+            <jvmarg value="-verbose:gc" />
+
+            <fileset dir="${basedir}">
+                <include name="**/TestStatuses.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+        </junit5:junit5>
+    </target>
+
+    <target name="sysouts">
+        <junit5:junit5 sysouts="true" jvmoutputaction="pipe,ignore" onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+
+            <jvmarg value="-verbose:class" />
+
+            <fileset dir="${basedir}">
+                <include name="**/TestSysstreams.class" />
+            </fileset>
+        </junit5:junit5>
+    </target>
+
+    <target name="weirdclasses">
+        <junit haltonfailure="false" haltonerror="false" printsummary="false" showoutput="false" filtertrace="false">
+            <classpath refid="tests.classpath" />
+            <classpath>
+                <fileset dir="../..">
+                    <include name="lib/junit-4.9.jar" />
+                </fileset>
+            </classpath>
+
+            <batchtest>
+                <formatter type="plain" usefile="false" />
+                <fileset dir="${basedir}/../../src/test/java" includes="**/bad/*.java" />
+            </batchtest>
+        </junit>
+    </target>
+
+    <target name="listeners">
+        <junit5:junit5 haltonfailure="false" onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}">
+                <include name="**/SuiteListeners.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+        </junit5:junit5>
+    </target>
+
+    <target name="singleUserDefinedRunListener">
+        <junit5:junit5 haltonfailure="false" onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}">
+                <include name="**/TestSuccess.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+
+            <runlisteners>
+                <junit5:run-listener className="com.carrotsearch.ant.tasks.junit5.runlisteners.UserDefinedRunListener1" />
+            </runlisteners>
+        </junit5:junit5>
+    </target>
+
+    <target name="multipleUserDefinedRunListeners">
+        <junit5:junit5 haltonfailure="false" onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}">
+                <include name="**/TestSuccess.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+
+            <runlisteners>
+                <junit5:run-listener className="com.carrotsearch.ant.tasks.junit5.runlisteners.UserDefinedRunListener2" />
+                <junit5:run-listener className="com.carrotsearch.ant.tasks.junit5.runlisteners.UserDefinedRunListener3" />
+            </runlisteners>
+        </junit5:junit5>
+    </target>
+  
+    <target name="syspropertyset">
+        <junit5:junit5 haltonfailure="false" onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+    
+            <fileset dir="${basedir}">
+                <include name="**/SysPropertySets.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+            
+            <syspropertyset>
+                <propertyref prefix="prefix" />
+            </syspropertyset>
+        </junit5:junit5>
+    </target>
+  
+    <target name="randomsysproperty">
+        <!-- Fix the main seed in advance to allow repeatable selection of attributes. -->
+        <local name="tests.seed" />
+        <junit5:pickseed property="tests.seed" />
+
+        <junit5:pickfromlist property="prefix.dummy1" allowundefined="false" seed="${tests.seed}">
+            <value>UTF-8</value>
+            <value>UTF-16</value>
+            <value>US-ASCII</value>
+            <value>iso8859-1</value>
+        </junit5:pickfromlist>
+
+        <junit5:pickfromlist property="prefix.dummy2" allowundefined="false" seed="${tests.seed}">
+            <value>UTF-8</value>
+            <value><!-- Empty for ignored property. --></value>
+            <value><!-- Empty for ignored property. --></value>
+            <value><!-- Empty for ignored property. --></value>
+        </junit5:pickfromlist>
+
+        <junit5:junit5 haltonfailure="false" seed="${tests.seed}" onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+
+            <fileset dir="${basedir}">
+                <include name="**/RandomSysProperty.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+
+            <sysproperty key="prefix.dummy1" value="${prefix.dummy1}" ignoreEmpty="true" />
+            <sysproperty key="prefix.dummy2" value="${prefix.dummy2}" ignoreEmpty="true" />
+
+            <!--
+            It'd be nicest to use local refs but they're not working due to: 
+            https://issues.apache.org/bugzilla/show_bug.cgi?id=50179
+            -->
+
+            <syspropertyset ignoreEmpty="true">
+                <propertyref prefix="prefix." />
+                <mapper type="glob" from="prefix.*" to="replaced.*" />
+            </syspropertyset>
+        </junit5:junit5>
+    </target>
+    
+    <target name="fileencodings">
+        <macrodef name="check.encoding">
+           <attribute name="encoding" />
+           <sequential>
+              <junit5:junit5 onNonEmptyWorkDirectory="wipe">
+                  <classpath refid="tests.classpath" />
+      
+                  <fileset dir="${basedir}">
+                      <include name="**/FileEncoding.class" />
+                  </fileset>
+      
+                  <listeners>
+                      <!-- Always in UTF-8 -->
+                      <junit5:report-text file="${log.file}" append="true" />
+                      <!-- Console output, environment-specific but show nonetheless. -->
+                      <junit5:report-text />
+                  </listeners>
+      
+                  <sysproperty key="file.encoding" value="@{encoding}" />
+              </junit5:junit5>
+           </sequential>
+        </macrodef>
+
+        <property name="log.file" location="fileencodings.log" />
+        <delete file="${log.file}" failonerror="true" />
+        <check.encoding encoding="US-ASCII" />
+        <check.encoding encoding="iso8859-1" />
+        <check.encoding encoding="UTF-8" />
+        <check.encoding encoding="UTF-16" />
+        <check.encoding encoding="UTF-16LE" />
+        <check.encoding encoding="UTF-32" />
+    </target>
+    
+    <target name="testHeartbeat">
+        <junit5:junit5 heartbeat="1"  onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+
+            <fileset dir="${basedir}">
+                <include name="**/HeartbeatSlow.class" />
+            </fileset>
+
+            <sysproperty key="junit5.tests.internal.initialDelayMs" value="3000" />
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+        </junit5:junit5>
+    </target>
+    
+    <target name="timestamps">
+        <junit5:junit5 haltonfailure="false"  onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}">
+                <include name="**/TestStatuses.class" />
+                <include name="**/TestSuccess.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text timestamps="true" />
+            </listeners>
+        </junit5:junit5>
+    </target>
+
+    <target name="sysoutsOnSuiteFailure">
+        <junit5:junit5 haltonfailure="false"  onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+
+            <fileset dir="${basedir}">
+                <include name="**/SysoutsOnSuiteFailure.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text />
+            </listeners>
+        </junit5:junit5>
+    </target>
+
+    <target name="sysoutsOnSuiteTimeout">
+        <junit5:junit5 haltonfailure="false"  onNonEmptyWorkDirectory="wipe">
+            <classpath refid="tests.classpath" />
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}">
+                <include name="**/SysoutsOnSuiteTimeout.class" />
+            </fileset>
+
+            <listeners>
+                <junit5:report-text showStatusOk="false" />
+            </listeners>
+        </junit5:junit5>
+   </target>
+
+   <target name="sysoutoom">
+      <junit5:junit5 onNonEmptyWorkDirectory="wipe" haltonfailure="true" parallelism="2" shuffleOnForkedJvm="true">
+          <classpath refid="tests.classpath" />
+
+          <fileset dir="${basedir}">
+              <include name="**/SysoutOom*.class" />
+          </fileset>
+
+          <listeners>
+              <junit5:report-text file="${basedir}/large.log" />
+              <junit5:report-json file="${basedir}/large.json" outputStreams="no" />
+              <junit5:report-ant-xml dir="${basedir}/large.xml" outputStreams="no" />
+          </listeners>
+      </junit5:junit5>
+
+      <delete includeemptydirs="true">
+          <fileset dir="${basedir}">
+              <include name="large.*/**" />
+          </fileset>
+      </delete>
+   </target>
+   
+   <target name="sysouts_passthrough">
+      <junit5:junit5 onNonEmptyWorkDirectory="wipe" haltonfailure="true" parallelism="1" shuffleOnForkedJvm="true">
+          <classpath refid="tests.classpath" />
+
+          <fileset dir="${basedir}">
+              <include name="**/SysoutPassthrough.class" />
+          </fileset>
+
+          <listeners>
+              <junit5:report-text />
+          </listeners>
+      </junit5:junit5>
+
+      <delete file="${basedir}/large.log" />
+   </target>
+
+    <target name="forkedmainfailure">
+        <junit5.preconf haltonfailure="true">
+            <fileset dir="${basedir}">
+                <include name="**/FireUnhandledRunnerException.class" />
+            </fileset>
+        </junit5.preconf>
+    </target>
+
+    <target name="suiteduplicate">
+        <junit5.preconf parallelism="2" uniqueSuiteNames="false">
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <fileset dir="${basedir}">
+                <include name="**/TestSuccess.class" />
+            </fileset>
+            <fileset dir="${basedir}">
+                <include name="**/TestSuccess.class" />
+            </fileset>
+
+            <balancers>
+                <junit5:execution-times>
+                    <fileset dir="${basedir}" includes="hints*.log" />
+                </junit5:execution-times>
+            </balancers>
+        </junit5.preconf>
+    </target>
+
+    <target name="duplicateresources">
+        <junit5.preconf parallelism="2" uniqueSuiteNames="false">
+            <classpath>
+                <fileset dir=".." includes="dependency/randomized*.jar" />
+            </classpath>
+
+            <junit5:duplicate times="10">
+                <fileset dir="${basedir}">
+                    <include name="**/TestSuccess.class" />
+                </fileset>
+            </junit5:duplicate>
+            
+            <listeners>
+                <junit5:report-text />
+            </listeners>           
+        </junit5.preconf>
+    </target>
+    
+   <target name="failureslist">
+      <junit5:junit5 onNonEmptyWorkDirectory="wipe" haltonfailure="false" parallelism="2" uniqueSuiteNames="false">
+          <classpath refid="tests.classpath" />
+
+          <junit5:duplicate times="3">
+            <fileset dir="${basedir}">
+                <include name="**/TestStatuses.class" />
+            </fileset>
+          </junit5:duplicate>
+
+          <listeners>
+              <junit5:report-text showNumFailures="3" />
+          </listeners>
+      </junit5:junit5>
+
+      <delete file="${basedir}/large.log" />
+   </target>
+  
+   <target name="shutdownhook">
+     <junit5.preconf haltonfailure="true">
+       <fileset dir="${basedir}">
+         <include name="**/ShutdownHook.class" />
+       </fileset>
+     </junit5.preconf>
+  
+     <delete file="${basedir}/large.log" />
+   </target>
+  
+   <target name="childvm_sysprops">
+     <junit5.preconf>
+       <fileset dir="${basedir}">
+           <include name="**/tests/ChildVmSysprops.class" />
+       </fileset>
+     </junit5.preconf>
+   </target>
+
+   <target name="oomcode">
+      <junit5:junit5 onNonEmptyWorkDirectory="wipe" haltonfailure="true">
+          <classpath refid="tests.classpath" />
+
+          <fileset dir="${basedir}">
+              <include name="**/OomCode.class" />
+          </fileset>
+
+          <listeners>
+              <junit5:report-text 
+                    showThrowable="true" 
+                    showStackTraces="true" 
+                    showOutput="always"
+              />
+          </listeners>
+      </junit5:junit5>
+   </target>
+   
+   <target name="oompermgen">
+      <junit5:junit5 onNonEmptyWorkDirectory="wipe" haltonfailure="true">
+          <classpath refid="tests.classpath" />
+          <classpath>
+            <fileset dir=".." includes="dependency/asm*.jar" />
+          </classpath>
+          
+
+          <fileset dir="${basedir}">
+              <include name="**/OomPermGen.class" />
+          </fileset>
+
+          <listeners>
+              <junit5:report-text 
+                    showThrowable="true" 
+                    showStackTraces="true" 
+                    showOutput="always"
+              />
+          </listeners>
+      </junit5:junit5>
+   </target>
+
+  <target name="filtertrace_default">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" haltonfailure="false">
+      <classpath refid="tests.classpath" />
+
+      <fileset dir="${basedir}">
+        <include name="**/TestStatuses.class" />
+      </fileset>
+
+      <listeners>
+        <junit5:report-text>
+          <junit5:filtertrace>
+            <!-- no custom filters. -->
+          </junit5:filtertrace>
+        </junit5:report-text>
+      </listeners>
+    </junit5:junit5>
+  </target>
+  
+  <target name="filtertrace_custom">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" haltonfailure="false">
+      <classpath refid="tests.classpath" />
+
+      <fileset dir="${basedir}">
+        <include name="**/TestStatuses.class" />
+      </fileset>
+
+      <listeners>
+        <junit5:report-text>
+          <junit5:filtertrace defaults="false">
+              <containsstring contains=".ForkedMain." />
+              <containsregex pattern="^(\s+at )(org\.junit\.)" /> 
+          </junit5:filtertrace>
+        </junit5:report-text>
+      </listeners>
+    </junit5:junit5>
+  </target>
+  
+  <target name="allFilteredOut">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" ifNoTests="fail">
+      <classpath refid="tests.classpath" />
+
+      <fileset dir="${basedir}">
+        <include name="**/TestStatuses.class" />
+      </fileset>
+
+      <sysproperty key="tests.method" value="-nonexistent-" />
+    </junit5:junit5>
+  </target>
+  
+  <target name="oneIgnored">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" ifNoTests="fail">
+      <classpath refid="tests.classpath" />
+
+      <fileset dir="${basedir}">
+        <include name="**/TestStatuses.class" />
+      </fileset>
+
+      <sysproperty key="tests.method" value="ignored" />
+    </junit5:junit5>
+  </target>
+  
+  <target name="oneAssumptionIgnored">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" ifNoTests="fail">
+      <classpath refid="tests.classpath" />
+
+      <fileset dir="${basedir}">
+        <include name="**/TestStatuses.class" />
+      </fileset>
+
+      <sysproperty key="tests.method" value="ignored" />
+    </junit5:junit5>
+  </target>      
+
+  <target name="oneSuccessful">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" ifNoTests="fail">
+      <classpath refid="tests.classpath" />
+
+      <fileset dir="${basedir}">
+        <include name="**/TestStatuses.class" />
+      </fileset>
+
+      <sysproperty key="tests.method" value="ok" />
+    </junit5:junit5>
+  </target>      
+
+  <target name="oneFailure">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" ifNoTests="fail">
+      <classpath refid="tests.classpath" />
+
+      <fileset dir="${basedir}">
+        <include name="**/TestStatuses.class" />
+      </fileset>
+
+      <sysproperty key="tests.method" value="failure" />
+    </junit5:junit5>
+  </target>      
+
+  <target name="oneError">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" ifNoTests="fail">
+      <classpath refid="tests.classpath" />
+
+      <fileset dir="${basedir}">
+        <include name="**/TestStatuses.class" />
+      </fileset>
+
+      <sysproperty key="tests.method" value="error" />
+    </junit5:junit5>
+  </target>      
+
+  <target name="statsProperties">
+    <sequential>
+      <local name="junit5.stats.tests" />
+      <local name="junit5.stats.errors" />
+      <local name="junit5.stats.failures" />
+      <local name="junit5.stats.ignores" />
+      <local name="junit5.stats.suites" />
+      <local name="junit5.stats.assumptions" />
+      <local name="junit5.stats.suiteErrors" />
+      <local name="junit5.stats.nonIgnored" />
+      <local name="junit5.stats.successful" />
+
+      <junit5:junit5 onNonEmptyWorkDirectory="wipe" statsPropertyPrefix="junit5.stats" haltonfailure="false">
+        <classpath refid="tests.classpath" />
+  
+        <fileset dir="${basedir}">
+          <include name="**/TestStatuses.class" />
+        </fileset>
+      </junit5:junit5>
+  
+      <echo>
+        ${junit5.stats.tests}
+        ${junit5.stats.errors}
+        ${junit5.stats.failures}
+        ${junit5.stats.ignores}
+        ${junit5.stats.suites}
+        ${junit5.stats.assumptions}
+        ${junit5.stats.suiteErrors}
+        ${junit5.stats.nonIgnored}
+        ${junit5.stats.successful}
+      </echo>
+
+      <fail><condition><not><equals arg1="${junit5.stats.tests}"    arg2="5" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.errors}"   arg2="1" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.failures}" arg2="1" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.ignores}"  arg2="1" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.suites}"   arg2="1" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.assumptions}" arg2="1" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.suiteErrors}" arg2="0" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.nonIgnored}"  arg2="3" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.successful}"  arg2="false" /></not></condition></fail>
+    </sequential>
+
+    <sequential>
+      <local name="junit5.stats.tests" />
+      <local name="junit5.stats.errors" />
+      <local name="junit5.stats.failures" />
+      <local name="junit5.stats.ignores" />
+      <local name="junit5.stats.suites" />
+      <local name="junit5.stats.assumptions" />
+      <local name="junit5.stats.suiteErrors" />
+      <local name="junit5.stats.nonIgnored" />
+      <local name="junit5.stats.successful" />
+
+      <junit5:junit5 onNonEmptyWorkDirectory="wipe" haltonfailure="false" statsPropertyPrefix="junit5.stats">
+        <classpath refid="tests.classpath" />
+  
+        <fileset dir="${basedir}">
+          <include name="**/TestStatuses.class" />
+        </fileset>
+  
+        <sysproperty key="tests.method" value="error" />
+      </junit5:junit5>
+  
+      <echo>
+        ${junit5.stats.tests}
+        ${junit5.stats.errors}
+        ${junit5.stats.failures}
+        ${junit5.stats.ignores}
+        ${junit5.stats.suites}
+        ${junit5.stats.assumptions}
+        ${junit5.stats.suiteErrors}
+        ${junit5.stats.nonIgnored}
+        ${junit5.stats.successful}
+      </echo>
+      
+      <fail><condition><not><equals arg1="${junit5.stats.tests}"    arg2="1" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.errors}"   arg2="1" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.failures}" arg2="0" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.ignores}"  arg2="0" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.suites}"   arg2="1" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.assumptions}" arg2="0" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.suiteErrors}" arg2="0" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.nonIgnored}"  arg2="1" /></not></condition></fail>
+      <fail><condition><not><equals arg1="${junit5.stats.successful}"  arg2="false" /></not></condition></fail>      
+    </sequential>
+  </target>
+
+  <target name="replicateSingleTest">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" 
+        ifNoTests="fail" 
+        haltonfailure="true" 
+        parallelism="3"
+        uniqueSuiteNames="false">
+      <classpath refid="tests.classpath" />
+      <classpath>
+          <fileset dir=".." includes="dependency/randomized*.jar" />
+      </classpath>
+
+      <listeners>
+          <junit5:report-text showOutput="always" />
+      </listeners>
+
+      <fileset dir="${basedir}">
+        <include name="**/TestSuiteReplicated.class" />
+      </fileset>
+    </junit5:junit5>
+  </target>
+
+  <target name="replicationAndBalancing">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" 
+        ifNoTests="fail" 
+        haltonfailure="true" 
+        parallelism="3"
+        uniqueSuiteNames="false">
+      <classpath refid="tests.classpath" />
+      <classpath>
+          <fileset dir=".." includes="dependency/randomized*.jar" />
+      </classpath>
+
+      <listeners>
+          <junit5:report-text showOutput="always" />
+      </listeners>
+
+      <fileset dir="${basedir}">
+        <include name="**/TestSuiteReplicated.class" />
+        <include name="**/TestNonReplicated*.class" />
+      </fileset>
+    </junit5:junit5>
+  </target>
+  
+  <target name="pseudoBalancing">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" 
+        ifNoTests="fail" 
+        haltonfailure="true" 
+        parallelism="3"
+        uniqueSuiteNames="false">
+      <classpath refid="tests.classpath" />
+      <classpath>
+          <fileset dir=".." includes="dependency/randomized*.jar" />
+      </classpath>
+
+      <listeners>
+          <junit5:report-text showOutput="always" />
+      </listeners>
+
+      <fileset dir="${basedir}">
+        <include name="**/TestPseudoLoadBalancing.class" />
+      </fileset>
+    </junit5:junit5>
+  </target>
+
+  <target name="stackoverflow">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" 
+        haltonfailure="true" parallelism="1" 
+        jvmoutputaction="pipe,ignore"
+        debugstream="true"
+        leavetemporary="true">
+      <classpath refid="tests.classpath" />
+
+      <fileset dir="${basedir}">
+          <include name="**/StackOverflow*.class" />
+      </fileset>
+      
+      <listeners>
+          <junit5:report-text showOutput="always" showStatusOk="true" showSuiteSummary="true" />
+      </listeners>      
+    </junit5:junit5>
+  </target>
+
+  <target name="errorsSoFar">
+    <junit5:junit5 onNonEmptyWorkDirectory="wipe" haltonfailure="false">
+      <classpath refid="tests.classpath" />
+
+      <fileset dir="${basedir}">
+        <include name="**/TestStatuses.class" />
+      </fileset>
+
+      <listeners>
+        <junit5:report-text showSuiteSummary="true">
+        </junit5:report-text>
+      </listeners>
+    </junit5:junit5>
+  </target>
+
+  <target name="gh255">
+    <makeurl property="junit.jar.url">
+      <fileset dir="../dependency" includes="junit-*.jar" />
+    </makeurl>
+    <makeurl property="junit5.jar.url">
+      <fileset refid="fileset.junit5" />
+    </makeurl>
+    <makeurl property="randomizedtesting.jar.url">
+      <fileset dir="../dependency" includes="randomizedtesting-runner*.jar" />
+    </makeurl>
+
+    <fail message="More than one file?">
+        <condition>
+         <not>
+             <resourcecount count="1">
+                 <fileset refid="fileset.junit5" />
+             </resourcecount>
+         </not>
+        </condition>
+    </fail>
+
+    <junit5.preconf haltonfailure="false" dir="${basedir}">
+      <jvmarg value="-Djava.security.manager" />
+      <jvmarg value="-Djava.security.debug=all,access,failure" />
+      <jvmarg value="-Djava.security.policy=${basedir}/security.policy" />
+      <jvmarg value="-Djunit.jar.url=${junit.jar.url}" />
+      <jvmarg value="-Djunit5.jar.url=${junit5.jar.url}" />
+      <jvmarg value="-Drandomizedtesting.jar.url=${randomizedtesting.jar.url}" />
+
+      <classpath>
+        <fileset refid="fileset.junit5" />
+      </classpath>
+
+      <fileset dir="${basedir}">
+        <include name="**/tests/TestSecuritySandbox.class" />
+      </fileset>
+    </junit5.preconf>
+  </target>
+</project>
