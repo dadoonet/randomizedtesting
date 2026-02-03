@@ -76,6 +76,10 @@
     <version.maven-javadoc-plugin>3.0.0</version.maven-javadoc-plugin>
     <version.maven-surefire-plugin>3.0.0-M1</version.maven-surefire-plugin>
     <version.forbiddenapis>2.5</version.forbiddenapis>
+
+    <!-- JUnit 5 Jupiter versions -->
+    <version.junit-jupiter>5.10.2</version.junit-jupiter>
+    <version.junit-platform>1.10.2</version.junit-platform>
   </properties>
 
   <modules>
@@ -172,6 +176,44 @@
         <artifactId>assertj-core</artifactId>
         <version>${version.assertj}</version>
         <scope>test</scope>
+      </dependency>
+
+      <!-- JUnit 5 Jupiter -->
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>${version.junit-jupiter}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <version>${version.junit-jupiter}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-params</artifactId>
+        <version>${version.junit-jupiter}</version>
+      </dependency>
+
+      <!-- JUnit 5 Platform -->
+      <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-launcher</artifactId>
+        <version>${version.junit-platform}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-engine</artifactId>
+        <version>${version.junit-platform}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-commons</artifactId>
+        <version>${version.junit-platform}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
