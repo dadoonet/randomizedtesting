@@ -32,7 +32,7 @@ public final class FilterExpressionParser {
     }
   }
   
-  interface IContext {
+  public interface IContext {
     boolean defaultValue();
     boolean hasGroup(String value); 
   }

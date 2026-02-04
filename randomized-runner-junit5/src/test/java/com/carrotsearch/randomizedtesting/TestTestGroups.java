@@ -95,28 +95,31 @@ public class TestTestGroups extends WithNestedTestClass {
     String group1Property = getSysProperty(Group1.class);
     String group2Property = getSysProperty(Group2.class);
     try {
+      // In JUnit 5, disabled groups cause tests to be skipped (ignored)
+      // Note: @BeforeAll/@AfterAll still run even if all tests are skipped
       afterClassRan = beforeClassRan = false;
-      checkTestsOutput(1, 0, 0, 1, Nested1.class);
-      assertFalse(afterClassRan);
-      assertFalse(beforeClassRan);
+      checkTestsOutput(0, 1, 0, 0, Nested1.class);  // Group2 disabled -> test skipped
+      // JUnit 5: lifecycle hooks run even when tests are skipped
+      assertTrue(afterClassRan);
+      assertTrue(beforeClassRan);
       
       afterClassRan = beforeClassRan = false;
       System.setProperty(group1Property, "true");
-      checkTestsOutput(1, 0, 0, 1, Nested1.class);
-      assertFalse(afterClassRan);
-      assertFalse(beforeClassRan);
+      checkTestsOutput(0, 1, 0, 0, Nested1.class);  // Group2 still disabled -> test skipped
+      assertTrue(afterClassRan);
+      assertTrue(beforeClassRan);
 
       afterClassRan = beforeClassRan = false;
       System.setProperty(group2Property, "true");
-      checkTestsOutput(1, 0, 0, 0, Nested1.class);
+      checkTestsOutput(1, 0, 0, 0, Nested1.class);  // Both groups enabled -> test runs
       assertTrue(afterClassRan);
       assertTrue(beforeClassRan);
 
       afterClassRan = beforeClassRan = false;
       System.setProperty(group1Property, "false");
-      checkTestsOutput(1, 0, 0, 1, Nested1.class);
-      assertFalse(afterClassRan);
-      assertFalse(beforeClassRan);
+      checkTestsOutput(0, 1, 0, 0, Nested1.class);  // Group1 disabled -> test skipped
+      assertTrue(afterClassRan);
+      assertTrue(beforeClassRan);
     } finally {
       System.clearProperty(group1Property);
       System.clearProperty(group2Property);
@@ -128,26 +131,28 @@ public class TestTestGroups extends WithNestedTestClass {
     String group1Property = getSysProperty(Group1.class);
     String group2Property = getSysProperty(Group2.class);
     try {
+      // Nested3 has 2 tests: test1 (groups) and testUnconditional (no groups)
+      // In JUnit 5, disabled groups cause tests to be skipped
       afterClassRan = beforeClassRan = false;
-      checkTestsOutput(2, 0, 0, 1, Nested3.class);
+      checkTestsOutput(1, 1, 0, 0, Nested3.class);  // test1 skipped (Group2 disabled), testUnconditional runs
       assertTrue(afterClassRan);
       assertTrue(beforeClassRan);
       
       afterClassRan = beforeClassRan = false;
       System.setProperty(group1Property, "true");
-      checkTestsOutput(2, 0, 0, 1, Nested3.class);
+      checkTestsOutput(1, 1, 0, 0, Nested3.class);  // test1 still skipped (Group2 disabled)
       assertTrue(afterClassRan);
       assertTrue(beforeClassRan);
 
       afterClassRan = beforeClassRan = false;
       System.setProperty(group2Property, "true");
-      checkTestsOutput(2, 0, 0, 0, Nested3.class);
+      checkTestsOutput(2, 0, 0, 0, Nested3.class);  // Both groups enabled -> both tests run
       assertTrue(afterClassRan);
       assertTrue(beforeClassRan);
 
       afterClassRan = beforeClassRan = false;
       System.setProperty(group1Property, "false");
-      checkTestsOutput(2, 0, 0, 1, Nested3.class);
+      checkTestsOutput(1, 1, 0, 0, Nested3.class);  // test1 skipped (Group1 disabled)
       assertTrue(afterClassRan);
       assertTrue(beforeClassRan);
     } finally {
@@ -161,26 +166,28 @@ public class TestTestGroups extends WithNestedTestClass {
     String group1Property = getSysProperty(Group1.class);
     String group2Property = getSysProperty(Group2.class);
     try {
+      // Nested2 has @Group1 @Group2 on the class
+      // In JUnit 5, class-level group disabling skips the container (class)
       afterClassRan = beforeClassRan = false;
-      checkTestsOutput(1, 0, 0, 1, Nested2.class);
+      checkTestsOutput(0, 1, 0, 0, Nested2.class);  // Class skipped (Group2 disabled)
       assertFalse(afterClassRan);
       assertFalse(beforeClassRan);
 
       afterClassRan = beforeClassRan = false;
       System.setProperty(group1Property, "true");
-      checkTestsOutput(1, 0, 0, 1, Nested2.class);
+      checkTestsOutput(0, 1, 0, 0, Nested2.class);  // Class still skipped (Group2 disabled)
       assertFalse(afterClassRan);
       assertFalse(beforeClassRan);
 
       afterClassRan = beforeClassRan = false;
       System.setProperty(group2Property, "true");
-      checkTestsOutput(1, 0, 0, 0, Nested2.class);
+      checkTestsOutput(1, 0, 0, 0, Nested2.class);  // Both groups enabled -> test runs
       assertTrue(afterClassRan);
       assertTrue(beforeClassRan);
 
       afterClassRan = beforeClassRan = false;
       System.setProperty(group1Property, "false");      
-      checkTestsOutput(1, 0, 0, 1, Nested2.class);
+      checkTestsOutput(0, 1, 0, 0, Nested2.class);  // Class skipped (Group1 disabled)
       assertFalse(afterClassRan);
       assertFalse(beforeClassRan);
     } finally {

@@ -22,11 +22,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.*;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.opentest4j.TestAbortedException;
 
 import com.carrotsearch.randomizedtesting.annotations.*;
+import com.carrotsearch.randomizedtesting.extensions.TestGroupCondition;
 
 /**
  * A JUnit 5 Jupiter {@link Extension} for running randomized test cases with
@@ -36,8 +38,7 @@ import com.carrotsearch.randomizedtesting.annotations.*;
  * It provides the same functionality including:
  * <ul>
  *   <li>Predictable random seeds for test reproducibility</li>
- *   <li>Thread leak detection</li>
- *   <li>Test timeouts</li>
+ *   <li>Test group filtering via {@link TestGroup} annotations</li>
  *   <li>Lifecycle hooks with randomized ordering</li>
  * </ul>
  *
@@ -54,6 +55,7 @@ import com.carrotsearch.randomizedtesting.annotations.*;
  *
  * @see RandomizedTest
  * @see RandomizedContext
+ * @see TestGroup
  */
 public class RandomizedExtension implements
     BeforeAllCallback,
@@ -62,7 +64,10 @@ public class RandomizedExtension implements
     AfterEachCallback,
     TestExecutionExceptionHandler,
     InvocationInterceptor,
-    TestInstancePostProcessor {
+    TestInstancePostProcessor,
+    ExecutionCondition {
+  
+  private final TestGroupCondition testGroupCondition = new TestGroupCondition();
 
   /**
    * Fake package of a stack trace entry inserted into exceptions thrown by
@@ -135,6 +140,11 @@ public class RandomizedExtension implements
 
   public RandomizedExtension() {
     // Default constructor
+  }
+
+  @Override
+  public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+    return testGroupCondition.evaluateExecutionCondition(context);
   }
 
   @Override
