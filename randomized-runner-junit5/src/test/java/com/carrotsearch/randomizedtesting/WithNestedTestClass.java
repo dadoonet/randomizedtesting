@@ -36,14 +36,20 @@ import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
 import org.opentest4j.TestAbortedException;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import com.carrotsearch.randomizedtesting.extensions.SystemPropertiesInvariantExtension;
 
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
 /**
  * Utility class to surround nested {@link RandomizedExtension} test suites.
+ * 
+ * <p>Thread leak detection is disabled for this class because nested tests
+ * may intentionally leak threads for testing purposes.
  */
 @ExtendWith(RandomizedExtension.class)
+@ThreadLeakScope(Scope.NONE)
 public class WithNestedTestClass {
   private static boolean runningNested;
 

@@ -340,15 +340,27 @@ public class ThreadLeakControl {
   }
 
   /**
-   * Check for thread leaks at the test level.
+   * Capture thread state before a test runs.
+   * Call this in beforeEach and store the result.
    */
-  public void checkTestLeaks(Class<?> testClass, Method testMethod, List<Throwable> errors) {
+  public Set<Thread> captureThreadStateBeforeTest() {
+    return getThreads(suiteFilters);
+  }
+
+  /**
+   * Check for thread leaks at the test level.
+   * 
+   * @param testClass the test class
+   * @param testMethod the test method
+   * @param beforeTestState the thread state captured before the test ran (from captureThreadStateBeforeTest)
+   * @param errors list to add errors to
+   */
+  public void checkTestLeaks(Class<?> testClass, Method testMethod, Set<Thread> beforeTestState, List<Throwable> errors) {
     if (suiteTimedOut.get()) {
       return;
     }
 
     final AnnotatedElement[] chain = {testMethod, testClass, DefaultAnnotationValues.class};
-    Set<Thread> beforeTestState = getThreads(suiteFilters);
     checkThreadLeaks(beforeTestState, errors, LifecycleScope.TEST, testMethod.getName(), chain);
     processUncaught(errors, handler.getUncaughtAndClear());
   }

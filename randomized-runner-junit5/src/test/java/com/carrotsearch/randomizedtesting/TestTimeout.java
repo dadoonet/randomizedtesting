@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import com.carrotsearch.randomizedtesting.annotations.Timeout;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import com.carrotsearch.randomizedtesting.extensions.TimeoutExtension;
@@ -34,8 +36,10 @@ public class TestTimeout extends WithNestedTestClass {
   /**
    * Nested test class with method timeout that fails.
    * Uses only RandomizedExtension (timeout is built-in).
+   * Thread leak scope is NONE because the timeout mechanism leaves threads running.
    */
   @ExtendWith(RandomizedExtension.class)
+  @ThreadLeakScope(Scope.NONE)
   public static class NestedFailingTimeout extends RandomizedTest {
     @Test
     @Timeout(millis = 50)

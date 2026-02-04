@@ -112,6 +112,8 @@ public class RandomizedExtension implements
   private static final String KEY_HANDLER = "uncaughtHandler";
   private static final String KEY_SUITE_START = "suiteStart";
   private static final String KEY_SUITE_TIMEOUT = "suiteTimeout";
+  private static final String KEY_THREAD_LEAK_CONTROL = "threadLeakControl";
+  private static final String KEY_THREAD_STATE_BEFORE_TEST = "threadStateBeforeTest";
 
   /**
    * Package scope logger.
@@ -182,6 +184,11 @@ public class RandomizedExtension implements
     store.put(KEY_SUITE_START, System.currentTimeMillis());
     store.put(KEY_SUITE_TIMEOUT, getSuiteTimeout(testClass));
 
+    // Initialize thread leak control
+    ThreadLeakControl threadLeakControl = new ThreadLeakControl(threadGroup, handler);
+    threadLeakControl.initializeSuite(testClass);
+    store.put(KEY_THREAD_LEAK_CONTROL, threadLeakControl);
+
     // Create and register context
     RandomizedContext randomizedContext = RandomizedContext.create(threadGroup, testClass, runnerRandomness);
     store.put(KEY_CONTEXT, randomizedContext);
@@ -207,12 +214,22 @@ public class RandomizedExtension implements
       randomizedContext.dispose();
     }
 
+    // Check for thread leaks at suite level
+    List<Throwable> errors = new ArrayList<>();
+    ThreadLeakControl threadLeakControl = store.get(KEY_THREAD_LEAK_CONTROL, ThreadLeakControl.class);
+    if (threadLeakControl != null) {
+      threadLeakControl.checkSuiteLeaks(context.getRequiredTestClass(), errors);
+    }
+
     // Restore uncaught exception handler
     UncaughtExceptionHandler previous = store.get("previousHandler", UncaughtExceptionHandler.class);
     AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
       Thread.setDefaultUncaughtExceptionHandler(previous);
       return null;
     });
+
+    // Throw any thread leak errors
+    throwIfNotEmpty(errors);
   }
 
   @Override
@@ -220,6 +237,12 @@ public class RandomizedExtension implements
     Store store = context.getStore(NAMESPACE);
     RandomizedContext randomizedContext = store.get(KEY_CONTEXT, RandomizedContext.class);
     Randomness runnerRandomness = store.get(KEY_RUNNER_RANDOMNESS, Randomness.class);
+
+    // Capture thread state before the test for leak detection
+    ThreadLeakControl threadLeakControl = store.get(KEY_THREAD_LEAK_CONTROL, ThreadLeakControl.class);
+    if (threadLeakControl != null) {
+      store.put(KEY_THREAD_STATE_BEFORE_TEST, threadLeakControl.captureThreadStateBeforeTest());
+    }
 
     if (randomizedContext != null && runnerRandomness != null) {
       Method testMethod = context.getRequiredTestMethod();
@@ -252,6 +275,22 @@ public class RandomizedExtension implements
       // Reset target method and pop randomness
       randomizedContext.setTargetMethod(null);
       randomizedContext.popAndDestroy();
+    }
+
+    // Check for thread leaks at test level
+    ThreadLeakControl threadLeakControl = store.get(KEY_THREAD_LEAK_CONTROL, ThreadLeakControl.class);
+    if (threadLeakControl != null) {
+      @SuppressWarnings("unchecked")
+      Set<Thread> beforeTestState = (Set<Thread>) store.get(KEY_THREAD_STATE_BEFORE_TEST, Set.class);
+      if (beforeTestState != null) {
+        List<Throwable> errors = new ArrayList<>();
+        threadLeakControl.checkTestLeaks(
+            context.getRequiredTestClass(),
+            context.getRequiredTestMethod(),
+            beforeTestState,
+            errors);
+        throwIfNotEmpty(errors);
+      }
     }
   }
 
@@ -494,6 +533,26 @@ public class RandomizedExtension implements
   }
 
   /**
+   * Throw the first exception if the list is not empty.
+   * Additional exceptions are added as suppressed.
+   */
+  private void throwIfNotEmpty(List<Throwable> errors) throws Exception {
+    if (!errors.isEmpty()) {
+      Throwable first = errors.get(0);
+      for (int i = 1; i < errors.size(); i++) {
+        first.addSuppressed(errors.get(i));
+      }
+      if (first instanceof Exception) {
+        throw (Exception) first;
+      } else if (first instanceof Error) {
+        throw (Error) first;
+      } else {
+        throw new RuntimeException(first);
+      }
+    }
+  }
+
+  /**
    * Augment stack trace with seed information.
    */
   static <T extends Throwable> T augmentStackTrace(T e, Randomness... seeds) {
@@ -579,62 +638,5 @@ public class RandomizedExtension implements
    */
   public static boolean hasZombieThreads() {
     return zombieMarker.get();
-  }
-
-  /**
-   * Queue uncaught exceptions handler.
-   */
-  static class QueueUncaughtExceptionsHandler implements UncaughtExceptionHandler {
-    private final ArrayList<UncaughtException> uncaughtExceptions = new ArrayList<>();
-    private boolean reporting = true;
-
-    @Override
-    public void uncaughtException(Thread t, Throwable e) {
-      synchronized (this) {
-        if (!reporting) {
-          return;
-        }
-        uncaughtExceptions.add(new UncaughtException(t, e));
-      }
-
-      Logger.getLogger(RunnerThreadGroup.class.getSimpleName()).log(
-          Level.WARNING,
-          "Uncaught exception in thread: " + t, e);
-    }
-
-    void stopReporting() {
-      synchronized (this) {
-        reporting = false;
-      }
-    }
-
-    void resumeReporting() {
-      synchronized (this) {
-        reporting = true;
-      }
-    }
-
-    public List<UncaughtException> getUncaughtAndClear() {
-      synchronized (this) {
-        final ArrayList<UncaughtException> copy = new ArrayList<>(uncaughtExceptions);
-        uncaughtExceptions.clear();
-        return copy;
-      }
-    }
-  }
-
-  /**
-   * Uncaught exception holder.
-   */
-  static class UncaughtException {
-    final Thread thread;
-    final String threadName;
-    final Throwable error;
-
-    UncaughtException(Thread t, Throwable error) {
-      this.threadName = Threads.threadName(t);
-      this.thread = t;
-      this.error = error;
-    }
   }
 }
