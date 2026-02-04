@@ -29,6 +29,7 @@ import org.opentest4j.TestAbortedException;
 
 import com.carrotsearch.randomizedtesting.annotations.*;
 import com.carrotsearch.randomizedtesting.extensions.TestGroupCondition;
+import com.carrotsearch.randomizedtesting.extensions.TimeoutExtension;
 
 /**
  * A JUnit 5 Jupiter {@link Extension} for running randomized test cases with
@@ -275,8 +276,82 @@ public class RandomizedExtension implements
   public void interceptTestMethod(Invocation<Void> invocation,
                                   ReflectiveInvocationContext<Method> invocationContext,
                                   ExtensionContext extensionContext) throws Throwable {
-    // Execute the test method with potential timeout handling
-    invocation.proceed();
+    // Check for timeout
+    int timeout = getMethodTimeout(invocationContext.getExecutable(), extensionContext);
+    
+    if (timeout <= 0) {
+      // No timeout, proceed normally
+      invocation.proceed();
+    } else {
+      // Execute with timeout
+      executeWithTimeout(invocation, timeout, "Test timeout exceeded");
+    }
+  }
+  
+  /**
+   * Execute an invocation with a timeout.
+   */
+  private void executeWithTimeout(Invocation<Void> invocation, int timeoutMillis, String message) throws Throwable {
+    final String originalThreadName = Thread.currentThread().getName();
+    java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+      Thread t = new Thread(r, originalThreadName);
+      t.setDaemon(true);
+      return t;
+    });
+    
+    java.util.concurrent.Future<Void> future = executor.submit(() -> {
+      try {
+        invocation.proceed();
+        return null;
+      } catch (Throwable t) {
+        throw new java.util.concurrent.ExecutionException(t);
+      }
+    });
+    
+    try {
+      future.get(timeoutMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
+    } catch (java.util.concurrent.TimeoutException e) {
+      future.cancel(true);
+      throw new TimeoutExtension.TimeoutException(message + " (timeout: " + timeoutMillis + "ms)");
+    } catch (java.util.concurrent.ExecutionException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof java.util.concurrent.ExecutionException && cause.getCause() != null) {
+        throw cause.getCause();
+      }
+      throw cause != null ? cause : e;
+    } finally {
+      executor.shutdownNow();
+    }
+  }
+  
+  /**
+   * Get timeout for a method from annotations or system properties.
+   */
+  private int getMethodTimeout(Method method, ExtensionContext context) {
+    // Check method-level @Timeout annotation
+    Timeout methodTimeout = method.getAnnotation(Timeout.class);
+    if (methodTimeout != null) {
+      return methodTimeout.millis();
+    }
+    
+    // Check class-level @Timeout annotation
+    Class<?> testClass = context.getRequiredTestClass();
+    Timeout classTimeout = testClass.getAnnotation(Timeout.class);
+    if (classTimeout != null) {
+      return classTimeout.millis();
+    }
+    
+    // Check system property
+    String sysProp = System.getProperty(SysGlobals.SYSPROP_TIMEOUT());
+    if (sysProp != null && !sysProp.isEmpty()) {
+      try {
+        return Integer.parseInt(sysProp);
+      } catch (NumberFormatException e) {
+        // ignore
+      }
+    }
+    
+    return DEFAULT_TIMEOUT;
   }
 
   /**
