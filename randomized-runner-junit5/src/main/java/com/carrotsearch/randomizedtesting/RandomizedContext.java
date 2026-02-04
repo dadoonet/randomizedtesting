@@ -30,10 +30,12 @@ public final class RandomizedContext {
   }
   
   /** 
-   * All thread groups we're currently tracking contexts for. 
+   * All thread groups we're currently tracking contexts for.
+   * Uses a stack to support nested test executions (e.g., when runTests() is called
+   * within a test method to execute nested test classes).
    */
-  final static IdentityHashMap<ThreadGroup, RandomizedContext> contexts 
-    = new IdentityHashMap<ThreadGroup, RandomizedContext>();
+  final static IdentityHashMap<ThreadGroup, java.util.ArrayDeque<RandomizedContext>> contexts 
+    = new IdentityHashMap<ThreadGroup, java.util.ArrayDeque<RandomizedContext>>();
 
   /** 
    * Per thread resources for each context. Allow GCing of threads. 
@@ -245,10 +247,14 @@ public final class RandomizedContext {
     }
 
     synchronized (_globalLock) {
-      RandomizedContext context;
+      RandomizedContext context = null;
       while (true) {
-        context = contexts.get(currentGroup);
-        if (context == null && currentGroup.getParent() != null) {
+        java.util.ArrayDeque<RandomizedContext> stack = contexts.get(currentGroup);
+        if (stack != null && !stack.isEmpty()) {
+          context = stack.peek();
+          break;
+        }
+        if (currentGroup.getParent() != null) {
           currentGroup = currentGroup.getParent();
         } else {
           break;
@@ -279,11 +285,17 @@ public final class RandomizedContext {
 
   /**
    * Create a new context bound to a thread group.
+   * Pushes the new context onto a stack to support nested test executions.
    */
   static RandomizedContext create(ThreadGroup tg, Class<?> suiteClass, Randomness runnerRandomness) {
     synchronized (_globalLock) {
-      RandomizedContext ctx = new RandomizedContext(tg, suiteClass, runnerRandomness); 
-      contexts.put(tg, ctx);
+      RandomizedContext ctx = new RandomizedContext(tg, suiteClass, runnerRandomness);
+      java.util.ArrayDeque<RandomizedContext> stack = contexts.get(tg);
+      if (stack == null) {
+        stack = new java.util.ArrayDeque<>();
+        contexts.put(tg, stack);
+      }
+      stack.push(ctx);
       ctx.perThreadResources.put(Thread.currentThread(), new PerThreadResources());
       return ctx;
     }
@@ -291,12 +303,21 @@ public final class RandomizedContext {
 
   /**
    * Dispose of the context.
+   * Pops this context from the stack to restore the parent context (if any).
    */
   void dispose() {
     synchronized (_globalLock) {
       checkDisposed();
       disposed = true;
-      contexts.remove(threadGroup);
+      
+      // Pop this context from the stack
+      java.util.ArrayDeque<RandomizedContext> stack = contexts.get(threadGroup);
+      if (stack != null) {
+        stack.remove(this);
+        if (stack.isEmpty()) {
+          contexts.remove(threadGroup);
+        }
+      }
 
       // Clean up and invalidate any per-thread published randoms.
       synchronized (_contextLock) {
@@ -359,7 +380,8 @@ public final class RandomizedContext {
     }
 
     synchronized (_globalLock) {
-      RandomizedContext context = contexts.get(tGroup);
+      java.util.ArrayDeque<RandomizedContext> stack = contexts.get(tGroup);
+      RandomizedContext context = (stack != null && !stack.isEmpty()) ? stack.peek() : null;
       if (context == null) {
         throw new IllegalStateException("No context information for thread: " + t);
       }

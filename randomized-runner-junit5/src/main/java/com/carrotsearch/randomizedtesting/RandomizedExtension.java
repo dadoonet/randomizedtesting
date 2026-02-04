@@ -332,8 +332,20 @@ public class RandomizedExtension implements
       randomizedContext.popAndDestroy();
     }
 
+    // Check for uncaught exceptions from spawned threads
+    QueueUncaughtExceptionsHandler handler = store.get(KEY_HANDLER, QueueUncaughtExceptionsHandler.class);
+    List<Throwable> uncaughtErrors = new ArrayList<>();
+    if (handler != null) {
+      for (UncaughtException ue : handler.getUncaughtAndClear()) {
+        uncaughtErrors.add(new RuntimeException(
+            "Uncaught exception in thread: " + ue.threadName,
+            ue.error));
+      }
+    }
+    
     // Check for thread leaks at test level
     List<Throwable> errors = new ArrayList<>(resourceErrors);
+    errors.addAll(uncaughtErrors);
     ThreadLeakControl threadLeakControl = store.get(KEY_THREAD_LEAK_CONTROL, ThreadLeakControl.class);
     if (threadLeakControl != null) {
       @SuppressWarnings("unchecked")
