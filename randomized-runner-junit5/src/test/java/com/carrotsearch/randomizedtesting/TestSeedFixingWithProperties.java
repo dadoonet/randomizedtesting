@@ -48,12 +48,18 @@ public class TestSeedFixingWithProperties extends WithNestedTestClass {
   /**
    * Runner seed fixing only (methods have predictable pseudo-random seeds derived from 
    * the runner). 
+   * 
+   * Note: In JUnit 5, iterations happen within a single test method invocation,
+   * so only 1 test run is reported even though the method executes 3 times.
    */
   @Test
   public void testFixedRunnerPropertyOnly() {
     System.setProperty(SYSPROP_RANDOM_SEED(), "deadbeef");
     System.setProperty(SYSPROP_ITERATIONS(), "3");
-    checkTestsOutput(3, 0, 0, 0, Nested.class);
+    // JUnit 5 reports 1 run even though the method executes 3 times internally
+    checkTestsOutput(1, 0, 0, 0, Nested.class);
+    // We should have 4 seeds: 1 from @BeforeAll + 3 from testMethod iterations
+    assertEquals(4, seeds.size(), "Expected 4 seeds (1 @BeforeAll + 3 iterations)");
     assertEquals(0xdeadbeefL, seeds.get(0).longValue());
     // _very_ slim chances of this actually being true...
     assertFalse(

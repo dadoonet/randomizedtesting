@@ -116,6 +116,8 @@ public class RandomizedExtension implements
   private static final String KEY_SUITE_TIMEOUT = "suiteTimeout";
   private static final String KEY_THREAD_LEAK_CONTROL = "threadLeakControl";
   private static final String KEY_THREAD_STATE_BEFORE_TEST = "threadStateBeforeTest";
+  private static final String KEY_GLOBAL_METHOD_SEED = "globalMethodSeed";
+  private static final String KEY_ITERATIONS = "iterations";
 
   /**
    * Package scope logger.
@@ -202,7 +204,7 @@ public class RandomizedExtension implements
     Store store = context.getStore(NAMESPACE);
 
     // Initialize the runner's main seed/randomness source
-    Randomness runnerRandomness = initializeRandomness(testClass);
+    Randomness runnerRandomness = initializeRandomness(testClass, store);
     store.put(KEY_RUNNER_RANDOMNESS, runnerRandomness);
 
     // Create class model
@@ -430,14 +432,59 @@ public class RandomizedExtension implements
     // Check suite timeout first
     checkSuiteTimeout(extensionContext);
     
+    Store store = extensionContext.getStore(NAMESPACE);
+    Integer iterationsObj = store.get(KEY_ITERATIONS, Integer.class);
+    int iterations = (iterationsObj != null) ? iterationsObj : 1;
+    
     // Check for method timeout
     int timeout = getMethodTimeout(invocationContext.getExecutable(), extensionContext);
     
+    // Execute first iteration (already set up by beforeEach)
+    executeMethodWithTimeout(invocation, timeout);
+    
+    // Execute additional iterations if SYSPROP_ITERATIONS > 1
+    if (iterations > 1) {
+      RandomizedContext randomizedContext = store.get(KEY_CONTEXT, RandomizedContext.class);
+      Randomness runnerRandomness = store.get(KEY_RUNNER_RANDOMNESS, Randomness.class);
+      Method testMethod = extensionContext.getRequiredTestMethod();
+      Object testInstance = extensionContext.getRequiredTestInstance();
+      
+      for (int i = 1; i < iterations; i++) {
+        // Check suite timeout before each iteration
+        checkSuiteTimeout(extensionContext);
+        
+        // Clean up previous iteration
+        if (randomizedContext != null) {
+          closeContextResources(randomizedContext, LifecycleScope.TEST);
+          randomizedContext.popAndDestroy();
+        }
+        
+        // Set up new iteration
+        if (randomizedContext != null && runnerRandomness != null) {
+          long testSeed = determineTestSeed(testMethod, runnerRandomness, extensionContext);
+          Randomness testRandomness = new Randomness(testSeed, runnerRandomness.getRandomSupplier());
+          store.put(KEY_RANDOMNESS, testRandomness);
+          randomizedContext.push(testRandomness);
+          randomizedContext.setTargetMethod(testMethod);
+        }
+        
+        // Execute the iteration by invoking the method directly
+        Invocation<Void> iterationInvocation = new Invocation<Void>() {
+          @Override
+          public Void proceed() throws Throwable {
+            testMethod.invoke(testInstance);
+            return null;
+          }
+        };
+        executeMethodWithTimeout(iterationInvocation, timeout);
+      }
+    }
+  }
+  
+  private void executeMethodWithTimeout(Invocation<Void> invocation, int timeout) throws Throwable {
     if (timeout <= 0) {
-      // No timeout, proceed normally
       invocation.proceed();
     } else {
-      // Execute with timeout
       executeWithTimeout(invocation, timeout, "Test timeout exceeded");
     }
   }
@@ -574,7 +621,7 @@ public class RandomizedExtension implements
   /**
    * Initialize randomness for the test class.
    */
-  private Randomness initializeRandomness(Class<?> testClass) {
+  private Randomness initializeRandomness(Class<?> testClass, Store store) {
     List<SeedDecorator> decorators = new ArrayList<>();
     for (SeedDecorators decAnn : getAnnotationsFromClassHierarchy(testClass, SeedDecorators.class)) {
       for (Class<? extends SeedDecorator> clazz : decAnn.value()) {
@@ -604,11 +651,28 @@ public class RandomizedExtension implements
             + SYSPROP_RANDOM_SEED() + " specification: " + globalSeed);
       }
       initialSeed = seedChain[0];
+      // Store global method seed if specified (runner:method format)
+      if (seedChain.length == 2) {
+        store.put(KEY_GLOBAL_METHOD_SEED, seedChain[1]);
+      }
     } else if (testClass.isAnnotationPresent(Seed.class)) {
       initialSeed = seedFromAnnot(testClass, randomSeed)[0];
     } else {
       initialSeed = randomSeed;
     }
+    
+    // Store iteration count from system property
+    String itersStr = System.getProperty(SYSPROP_ITERATIONS());
+    int iterations = 1;
+    if (itersStr != null && !itersStr.isEmpty()) {
+      try {
+        iterations = Integer.parseInt(itersStr);
+        if (iterations < 1) iterations = 1;
+      } catch (NumberFormatException e) {
+        // ignore
+      }
+    }
+    store.put(KEY_ITERATIONS, iterations);
 
     return new Randomness(initialSeed, randomSupplier, decArray);
   }
@@ -635,6 +699,14 @@ public class RandomizedExtension implements
    * Determine the seed for a test method.
    */
   private long determineTestSeed(Method method, Randomness runnerRandomness, ExtensionContext context) {
+    Store store = context.getStore(NAMESPACE);
+    
+    // Check for global method seed (from SYSPROP_RANDOM_SEED with runner:method format)
+    Long globalMethodSeed = store.get(KEY_GLOBAL_METHOD_SEED, Long.class);
+    if (globalMethodSeed != null) {
+      return globalMethodSeed;
+    }
+    
     // Check for seed from @Seeds annotation (via SeedsExtension)
     Seed seedFromSeeds = SeedsExtension.getCurrentSeed(context);
     if (seedFromSeeds != null) {
