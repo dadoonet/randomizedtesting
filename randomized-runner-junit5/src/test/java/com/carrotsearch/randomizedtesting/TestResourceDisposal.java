@@ -5,11 +5,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 /**
@@ -30,7 +30,7 @@ public class TestResourceDisposal extends WithNestedTestClass {
     static boolean allTestScopeClosed;
     static boolean allSuiteScopeOpen;
 
-    @BeforeClass
+    @BeforeAll
     public static void clean() {
       testScope.clear();
       suiteScope.clear();
@@ -38,7 +38,7 @@ public class TestResourceDisposal extends WithNestedTestClass {
       suiteScope.add(closeAfterSuite(new DummyCloseable()));
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
       allTestScopeClosed = true;
       for (DummyCloseable c : Nested.testScope) {
@@ -78,18 +78,18 @@ public class TestResourceDisposal extends WithNestedTestClass {
   public void testResourceDisposalTestScope() {
     checkTestsOutput(3, 0, 1, 0, Nested.class);
     for (DummyCloseable c : Nested.testScope) {
-      Assert.assertTrue(c.closed);
+      assertTrue(c.closed);
     }
-    Assert.assertTrue(Nested.allTestScopeClosed);
+    assertTrue(Nested.allTestScopeClosed);
   }
 
   @Test
   public void testResourceDisposalSuiteScope() {
     runTests(Nested.class);
     for (DummyCloseable c : Nested.suiteScope) {
-      Assert.assertTrue(c.closed);
+      assertTrue(c.closed);
     }
-    Assert.assertTrue(Nested.allSuiteScopeOpen);    
+    assertTrue(Nested.allSuiteScopeOpen);    
   }
   
   public static class Nested2 extends RandomizedTest {
@@ -103,6 +103,6 @@ public class TestResourceDisposal extends WithNestedTestClass {
   @Test
   public void testFailedDisposalBreaksTestCase() {
     FullResult r = checkTestsOutput(1, 0, 1, 0, Nested2.class);
-    Assert.assertTrue(r.getFailures().get(0).getException() instanceof ResourceDisposalError);
+    assertTrue(r.getFailures().get(0).getException() instanceof ResourceDisposalError);
   }
 }

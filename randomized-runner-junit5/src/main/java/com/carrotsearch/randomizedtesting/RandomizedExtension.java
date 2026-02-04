@@ -209,15 +209,15 @@ public class RandomizedExtension implements
     Store store = context.getStore(NAMESPACE);
 
     // Close context resources
+    List<Throwable> errors = new ArrayList<>();
     RandomizedContext randomizedContext = store.get(KEY_CONTEXT, RandomizedContext.class);
     if (randomizedContext != null) {
-      closeContextResources(randomizedContext, LifecycleScope.SUITE);
+      errors.addAll(closeContextResources(randomizedContext, LifecycleScope.SUITE));
       randomizedContext.popAndDestroy();
       randomizedContext.dispose();
     }
 
     // Check for thread leaks at suite level
-    List<Throwable> errors = new ArrayList<>();
     ThreadLeakControl threadLeakControl = store.get(KEY_THREAD_LEAK_CONTROL, ThreadLeakControl.class);
     if (threadLeakControl != null) {
       threadLeakControl.checkSuiteLeaks(context.getRequiredTestClass(), errors);
@@ -270,9 +270,10 @@ public class RandomizedExtension implements
     Store store = context.getStore(NAMESPACE);
     RandomizedContext randomizedContext = store.get(KEY_CONTEXT, RandomizedContext.class);
 
+    List<Throwable> resourceErrors = new ArrayList<>();
     if (randomizedContext != null) {
       // Close test-level resources
-      closeContextResources(randomizedContext, LifecycleScope.TEST);
+      resourceErrors.addAll(closeContextResources(randomizedContext, LifecycleScope.TEST));
 
       // Reset target method and pop randomness
       randomizedContext.setTargetMethod(null);
@@ -280,20 +281,20 @@ public class RandomizedExtension implements
     }
 
     // Check for thread leaks at test level
+    List<Throwable> errors = new ArrayList<>(resourceErrors);
     ThreadLeakControl threadLeakControl = store.get(KEY_THREAD_LEAK_CONTROL, ThreadLeakControl.class);
     if (threadLeakControl != null) {
       @SuppressWarnings("unchecked")
       Set<Thread> beforeTestState = (Set<Thread>) store.get(KEY_THREAD_STATE_BEFORE_TEST, Set.class);
       if (beforeTestState != null) {
-        List<Throwable> errors = new ArrayList<>();
         threadLeakControl.checkTestLeaks(
             context.getRequiredTestClass(),
             context.getRequiredTestMethod(),
             beforeTestState,
             errors);
-        throwIfNotEmpty(errors);
       }
     }
+    throwIfNotEmpty(errors);
   }
 
   @Override
@@ -580,15 +581,19 @@ public class RandomizedExtension implements
 
   /**
    * Close resources registered in the context for the given scope.
+   * @return list of errors encountered during resource disposal
    */
-  private void closeContextResources(RandomizedContext context, LifecycleScope scope) {
+  private List<Throwable> closeContextResources(RandomizedContext context, LifecycleScope scope) {
+    List<Throwable> errors = new ArrayList<>();
     context.closeResources(info -> {
       try {
         info.getResource().close();
       } catch (Throwable t) {
         logger.log(Level.WARNING, "Resource failed to close: " + info, t);
+        errors.add(new ResourceDisposalError("Resource failed to close: " + info, t));
       }
     }, scope);
+    return errors;
   }
 
   /**
