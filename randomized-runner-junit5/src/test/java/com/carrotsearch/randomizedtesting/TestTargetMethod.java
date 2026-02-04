@@ -5,8 +5,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.carrotsearch.randomizedtesting.extensions.RepeatExtension;
 
 public class TestTargetMethod extends WithNestedTestClass {
   public static class Nested extends RandomizedTest {
@@ -15,7 +18,8 @@ public class TestTargetMethod extends WithNestedTestClass {
       assumeRunningNested();
     }
 
-    @Test
+    @TestTemplate
+    @ExtendWith(RepeatExtension.class)
     @Repeat(iterations = 3)
     public void testOne() {
       Assertions.assertThat(RandomizedContext.current().getTargetMethod().getName())
