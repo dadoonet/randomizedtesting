@@ -87,20 +87,27 @@ public class TestEventBusSanityCheck extends RandomizedTest {
     aggregatedBus.register(new ExceptionListener());
     aggregatedBus.register(new SuiteListener());
     aggregatedBus.register(new RestartOnIdle());
-    for (final String suite : foo) {
-      Callable<Void> c = new Callable<Void>() {
-        @Override
-        public Void call() throws Exception {
-          aggregatedBus.post(suite);
-          aggregatedBus.post(idle.pollFirst());
-          return null;
-        }
-      };
-      futures.add(executor.submit(c));
-    }
+    try {
+      for (final String suite : foo) {
+        Callable<Void> c = new Callable<Void>() {
+          @Override
+          public Void call() throws Exception {
+            aggregatedBus.post(suite);
+            ForkedJvmIdle jvm = idle.pollFirst();
+            if (jvm != null) {
+              aggregatedBus.post(jvm);
+            }
+            return null;
+          }
+        };
+        futures.add(executor.submit(c));
+      }
 
-    for (Future<Void> f : futures) {
-      f.get();
+      for (Future<Void> f : futures) {
+        f.get();
+      }
+    } finally {
+      executor.shutdownNow();
     }
     
     assertFalse(hadErrors.get());
