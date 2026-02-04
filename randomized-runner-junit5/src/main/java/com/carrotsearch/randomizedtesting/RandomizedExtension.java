@@ -444,8 +444,30 @@ public class RandomizedExtension implements
   
   /**
    * Get timeout for a method from annotations or system properties.
+   * System property can end with "!" to force override annotation values.
+   * A value of "0!" disables timeout entirely.
    */
   private int getMethodTimeout(Method method, ExtensionContext context) {
+    // Parse system property first
+    String sysProp = System.getProperty(SysGlobals.SYSPROP_TIMEOUT());
+    boolean forceOverride = false;
+    int sysPropTimeout = -1;
+    
+    if (sysProp != null && !sysProp.isEmpty()) {
+      forceOverride = sysProp.endsWith("!");
+      String timeoutValue = forceOverride ? sysProp.substring(0, sysProp.length() - 1) : sysProp;
+      try {
+        sysPropTimeout = Integer.parseInt(timeoutValue);
+      } catch (NumberFormatException e) {
+        // ignore
+      }
+    }
+    
+    // If force override, return system property value (0 means disabled)
+    if (forceOverride && sysPropTimeout >= 0) {
+      return sysPropTimeout;
+    }
+    
     // Check method-level @Timeout annotation
     Timeout methodTimeout = method.getAnnotation(Timeout.class);
     if (methodTimeout != null) {
@@ -459,14 +481,9 @@ public class RandomizedExtension implements
       return classTimeout.millis();
     }
     
-    // Check system property
-    String sysProp = System.getProperty(SysGlobals.SYSPROP_TIMEOUT());
-    if (sysProp != null && !sysProp.isEmpty()) {
-      try {
-        return Integer.parseInt(sysProp);
-      } catch (NumberFormatException e) {
-        // ignore
-      }
+    // Fall back to system property (without force) or default
+    if (sysPropTimeout >= 0) {
+      return sysPropTimeout;
     }
     
     return DEFAULT_TIMEOUT;
