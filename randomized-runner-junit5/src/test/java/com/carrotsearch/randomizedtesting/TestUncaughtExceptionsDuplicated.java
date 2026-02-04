@@ -6,15 +6,15 @@ import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.notification.Failure;
-import org.junit.Assert;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUncaughtExceptionsDuplicated extends WithNestedTestClass {
   public static class Nested1 extends RandomizedTest {
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws Exception {
       assumeRunningNested();
       Thread t = new Thread() {
@@ -31,7 +31,7 @@ public class TestUncaughtExceptionsDuplicated extends WithNestedTestClass {
   }
 
   public static class Nested2 extends RandomizedTest {
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
       assumeRunningNested();
     }
@@ -71,7 +71,7 @@ public class TestUncaughtExceptionsDuplicated extends WithNestedTestClass {
   }
 
   public static class Nested3 extends RandomizedTest {
-    @Before
+    @BeforeEach
     public void runBeforeTest() throws Exception {
       assumeRunningNested();
       Thread t = new Thread() {
@@ -91,7 +91,7 @@ public class TestUncaughtExceptionsDuplicated extends WithNestedTestClass {
   @Test
   public void testExceptionInBeforeClassFailsTheTest() {
     FullResult r = checkTestsOutput(1, 0, 1, 0, Nested1.class);
-    Assert.assertTrue(r.getFailures().get(0).getTrace().contains("foobar"));
+    assertTrue(r.getFailures().get(0).getTrace().contains("foobar"));
   }
 
   @Test
@@ -99,7 +99,7 @@ public class TestUncaughtExceptionsDuplicated extends WithNestedTestClass {
     FullResult r = checkTestsOutput(3, 0, 3, 0, Nested2.class);
 
     ArrayList<String> foobars = new ArrayList<String>();
-    for (Failure f : r.getFailures()) {
+    for (FailureInfo f : r.getFailures()) {
       Matcher m = Pattern.compile("foobar[0-9]+").matcher(f.getTrace());
       while (m.find()) {
         foobars.add(m.group());
@@ -107,13 +107,13 @@ public class TestUncaughtExceptionsDuplicated extends WithNestedTestClass {
     }
 
     Collections.sort(foobars);
-    Assert.assertEquals("[foobar1, foobar2, foobar3]", 
+    assertEquals("[foobar1, foobar2, foobar3]", 
         Arrays.toString(foobars.toArray()));
   }
 
   @Test
   public void testExceptionWithinBeforeFailsTheTest() {
     FullResult r = checkTestsOutput(1, 0, 1, 0, Nested3.class);
-    Assert.assertTrue(r.getFailures().get(0).getTrace().contains("foobar"));
+    assertTrue(r.getFailures().get(0).getTrace().contains("foobar"));
   }
 }
