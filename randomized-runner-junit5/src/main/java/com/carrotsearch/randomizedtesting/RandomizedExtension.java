@@ -230,6 +230,14 @@ public class RandomizedExtension implements
       return null;
     });
 
+    // Augment errors with seed information
+    Randomness runnerRandomness = store.get(KEY_RUNNER_RANDOMNESS, Randomness.class);
+    if (runnerRandomness != null) {
+      for (Throwable error : errors) {
+        augmentStackTrace(error, runnerRandomness);
+      }
+    }
+
     // Throw any thread leak errors
     throwIfNotEmpty(errors);
   }
@@ -294,6 +302,19 @@ public class RandomizedExtension implements
             errors);
       }
     }
+    
+    // Augment errors with seed information
+    Randomness runnerRandomness = store.get(KEY_RUNNER_RANDOMNESS, Randomness.class);
+    Randomness testRandomness = store.get(KEY_RANDOMNESS, Randomness.class);
+    if (runnerRandomness != null) {
+      Randomness[] seeds = testRandomness != null ?
+          new Randomness[]{runnerRandomness, testRandomness} :
+          new Randomness[]{runnerRandomness};
+      for (Throwable error : errors) {
+        augmentStackTrace(error, seeds);
+      }
+    }
+    
     throwIfNotEmpty(errors);
   }
 
