@@ -1,20 +1,23 @@
 package com.carrotsearch.randomizedtesting;
 
-import org.junit.*;
-import org.junit.runner.*;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Test {@link Result}'s run count for ignored tests.
+ * Test run count for ignored/disabled tests.
  */
 public class TestIgnoredRunCount extends WithNestedTestClass {
+  
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested1 {
-    @Test @Ignore
+    @Test @Disabled
     public void ignored() {}
   }
 
-  @RunWith(RandomizedRunner.class)
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested2 {
-    @Test @Ignore
+    @Test @Disabled
     public void ignored() {}
   }
 

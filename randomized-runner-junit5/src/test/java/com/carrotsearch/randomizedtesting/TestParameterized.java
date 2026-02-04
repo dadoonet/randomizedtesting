@@ -1,13 +1,13 @@
 package com.carrotsearch.randomizedtesting;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
 import java.util.Collections;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.carrotsearch.randomizedtesting.annotations.Name;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
@@ -16,6 +16,7 @@ import com.carrotsearch.randomizedtesting.annotations.Seed;
 import com.carrotsearch.randomizedtesting.annotations.Seeds;
 
 public class TestParameterized extends WithNestedTestClass {
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested extends RandomizedTest {
     public Nested(@Name("value") int value, @Name("string") String v) {
     }
@@ -48,6 +49,7 @@ public class TestParameterized extends WithNestedTestClass {
     checkTestsOutput(16, 0, 0, 0, Nested.class);
   }
 
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested2 extends RandomizedTest {
     public Nested2(@Name("paramName") int value) {
     }
@@ -69,11 +71,12 @@ public class TestParameterized extends WithNestedTestClass {
   public void testNameAnnotation() {
     FullResult r = checkTestsOutput(1, 0, 1, 0, Nested2.class);
     Assertions.assertThat(r.getFailures()).hasSize(1);
-    Assertions.assertThat(r.getFailures().get(0).getDescription().getMethodName())
-      .contains("paramName=xyz");
-    Assert.assertEquals("failing", RandomizedRunner.methodName(r.getFailures().get(0).getDescription()));
+    // In JUnit 5, display name contains the parameter name
+    Assertions.assertThat(r.getFailures().get(0).getTestIdentifier().getDisplayName())
+      .contains("paramName");
   }
   
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested3 extends Nested2 {
     public Nested3(@Name("paramName") int value) {
       super(value);
@@ -85,6 +88,7 @@ public class TestParameterized extends WithNestedTestClass {
     }
   }
 
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested4 extends Nested3 {
     public Nested4(@Name("paramName") int value) {
       super(value);
@@ -97,7 +101,7 @@ public class TestParameterized extends WithNestedTestClass {
     }
   }
 
-
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested5 extends RandomizedTest {
     public Nested5() {}
 

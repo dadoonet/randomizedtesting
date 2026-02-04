@@ -1,16 +1,16 @@
 package com.carrotsearch.randomizedtesting;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import static com.carrotsearch.randomizedtesting.SysGlobals.*;
 
 /**
@@ -19,9 +19,9 @@ import static com.carrotsearch.randomizedtesting.SysGlobals.*;
 public class TestClassMethodFiltering extends WithNestedTestClass {
   static List<String> methods = new ArrayList<String>();
 
-  @RunWith(RandomizedRunner.class)
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested1 {
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
       methods.add("beforeClass1");
     }
@@ -39,9 +39,9 @@ public class TestClassMethodFiltering extends WithNestedTestClass {
     }    
   }
 
-  @RunWith(RandomizedRunner.class)
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested2 {
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
       methods.add("beforeClass2");
     }
@@ -108,12 +108,12 @@ public class TestClassMethodFiltering extends WithNestedTestClass {
     assertEquals(Arrays.asList("beforeClass1", "method1", "beforeClass2", "method1"), methods);
   }
 
-  @Before
+  @BeforeEach
   public void cleanupBefore() {
     cleanupAfter();
   }
 
-  @After
+  @AfterEach
   public void cleanupAfter() {
     System.clearProperty(SYSPROP_TESTCLASS());
     System.clearProperty(SYSPROP_TESTMETHOD());

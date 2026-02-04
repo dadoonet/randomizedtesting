@@ -1,10 +1,10 @@
 package com.carrotsearch.randomizedtesting;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.TestGroup;
@@ -42,12 +42,12 @@ public class TestNightlyMode extends WithNestedTestClass {
     checkTestsOutput(2, 0, 1, 1, Nested.class);
   }
 
-  @Before
+  @BeforeEach
   public void cleanupBefore() {
     cleanupAfter();
   }
   
-  @After
+  @AfterEach
   public void cleanupAfter() {
     System.clearProperty(TestGroup.Utilities.getSysProperty(Nightly.class));
   }  

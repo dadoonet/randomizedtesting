@@ -1,7 +1,7 @@
 package com.carrotsearch.randomizedtesting.contracts;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
@@ -10,7 +10,7 @@ import com.carrotsearch.randomizedtesting.WithNestedTestClass;
  * Class-level {@link Ignore}.
  */
 public class TestClassLevelIgnore extends WithNestedTestClass {
-  @Ignore
+  @Disabled
   public static class Nested extends RandomizedTest {
     @Test
     public void ignored() {

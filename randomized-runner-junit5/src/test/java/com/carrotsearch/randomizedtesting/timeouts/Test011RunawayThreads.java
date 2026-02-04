@@ -2,20 +2,21 @@ package com.carrotsearch.randomizedtesting.timeouts;
 
 import java.util.concurrent.*;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.*;
-import org.junit.runner.notification.Failure;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
+import com.carrotsearch.randomizedtesting.RandomizedRunnerConstants;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.Utils;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 
-@RunWith(RandomizedRunner.class)
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith(RandomizedExtension.class)
 public class Test011RunawayThreads extends WithNestedTestClass {
   private abstract static class ThreadWithException extends Thread {
     public volatile Throwable throwable;
@@ -49,7 +50,7 @@ public class Test011RunawayThreads extends WithNestedTestClass {
     new ThreadWithException() {
       protected void runWrapped() {
         RandomizedContext ctx = RandomizedContext.current();
-        Assert.assertEquals(seed, Utils.getSeed(ctx.getRandomness()));
+        assertEquals(seed, Utils.getSeed(ctx.getRandomness()));
       }
     }.startAndJoin();
   }
@@ -63,7 +64,7 @@ public class Test011RunawayThreads extends WithNestedTestClass {
       executor.submit(new Runnable() {
         public void run() {
           RandomizedContext ctx = RandomizedContext.current();
-          Assert.assertEquals(seed, Utils.getSeed(ctx.getRandomness()));
+          assertEquals(seed, Utils.getSeed(ctx.getRandomness()));
         }
       }).get();
     } catch (ExecutionException e) {
@@ -74,6 +75,7 @@ public class Test011RunawayThreads extends WithNestedTestClass {
     }
   }
   
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested extends RandomizedTest {
     final boolean withJoin;
 
@@ -101,6 +103,7 @@ public class Test011RunawayThreads extends WithNestedTestClass {
     }
   }
   
+  @ExtendWith(RandomizedExtension.class)
   public static class NestedNoJoin extends Nested {
     public NestedNoJoin() {
       super(false);
@@ -110,25 +113,28 @@ public class Test011RunawayThreads extends WithNestedTestClass {
   @Test
   public void subUncaughtExceptionInSpunOffThread() throws Throwable {
     FullResult r = runTests(Nested.class);
-    Assert.assertEquals(1, r.getFailureCount());
-    Failure testFailure = r.getFailures().get(0);
+    assertEquals(1, r.getFailureCount());
+    FailureInfo testFailure = r.getFailures().get(0);
     Throwable testException = testFailure.getException();
     Throwable threadException = testException.getCause();
-    Assert.assertNotNull(RandomizedRunner.seedFromThrowable(testException));
-    Assert.assertNotNull(RandomizedRunner.seedFromThrowable(threadException));
+    assertNotNull(RandomizedRunnerConstants.seedFromThrowable(testException));
+    if (threadException != null) {
+      assertNotNull(RandomizedRunnerConstants.seedFromThrowable(threadException));
+    }
   }
 
   @Test
   public void subNotJoined() throws Throwable {
     FullResult r = runTests(NestedNoJoin.class);
-    Assert.assertEquals(1, r.getFailureCount());
-    Failure testFailure = r.getFailures().get(0);
+    assertEquals(1, r.getFailureCount());
+    FailureInfo testFailure = r.getFailures().get(0);
     Throwable testException = testFailure.getException();
-    Assert.assertNotNull(RandomizedRunner.seedFromThrowable(testException));
+    assertNotNull(RandomizedRunnerConstants.seedFromThrowable(testException));
   }  
   
+  @ExtendWith(RandomizedExtension.class)
   public static class NestedClassScope extends RandomizedTest {
-    @BeforeClass
+    @BeforeAll
     public static void startThread() {
       if (!isRunningNested())
         return;
@@ -150,9 +156,9 @@ public class Test011RunawayThreads extends WithNestedTestClass {
   @Test
   public void subNotJoinOnClassLevel() throws Throwable {
     FullResult r = runTests(NestedClassScope.class);
-    Assert.assertEquals(1, r.getFailureCount());
-    Failure testFailure = r.getFailures().get(0);
+    assertEquals(1, r.getFailureCount());
+    FailureInfo testFailure = r.getFailures().get(0);
     Throwable testException = testFailure.getException();
-    Assert.assertNotNull(RandomizedRunner.seedFromThrowable(testException));
+    assertNotNull(RandomizedRunnerConstants.seedFromThrowable(testException));
   }    
 }

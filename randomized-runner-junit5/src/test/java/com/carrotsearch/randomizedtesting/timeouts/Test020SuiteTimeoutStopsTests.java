@@ -3,8 +3,8 @@ package com.carrotsearch.randomizedtesting.timeouts;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
@@ -36,7 +36,7 @@ public class Test020SuiteTimeoutStopsTests extends WithNestedTestClass {
 
     private static AtomicInteger executedTests;
 
-    @BeforeClass
+    @BeforeAll
     private static void setup() {
       assumeRunningNested();
       executedTests = new AtomicInteger();

@@ -1,20 +1,20 @@
 package com.carrotsearch.randomizedtesting;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test {@link Test#expected()}.
  */
 public class TestExpected extends WithNestedTestClass {
   public static class Nested1 extends RandomizedTest {
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testMethod1() {
       throw new RuntimeException();
     }
     
     // We expect a RuntimeException but get an error: should fail.
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testMethod2() {
       assumeRunningNested();
       throw new Error();
@@ -22,7 +22,7 @@ public class TestExpected extends WithNestedTestClass {
   }
 
   public static class Nested2 extends RandomizedTest {
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testMethod1() {
       assumeRunningNested();
       // Don't do anything.

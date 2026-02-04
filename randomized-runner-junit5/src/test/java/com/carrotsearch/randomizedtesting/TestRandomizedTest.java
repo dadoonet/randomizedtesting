@@ -11,10 +11,10 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.Arrays;
 
-import org.junit.Test;
-import org.junit.internal.AssumptionViolatedException;
+import org.junit.jupiter.api.Test;
+import org.opentest4j.TestAbortedException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestRandomizedTest extends RandomizedTest {
   @Test
@@ -184,7 +184,7 @@ public class TestRandomizedTest extends RandomizedTest {
     for (int i = 0; i < 1000; i++) { 
       int maxLength = randomIntBetween(0, 20);
       String str = randomUnicodeOfLength(maxLength);
-      assertTrue(str.length() + " " + maxLength, str.length() <= maxLength);
+      assertTrue(str.length() <= maxLength, str.length() + " " + maxLength);
     }
   }
 
@@ -216,7 +216,7 @@ public class TestRandomizedTest extends RandomizedTest {
     String message = randomUnicodeOfLength(10);
     try {
       assumeTrue(message, false);
-    } catch (AssumptionViolatedException e) {
+    } catch (TestAbortedException e) {
       assertTrue(e.getMessage().contains(message));
     }
   }
@@ -227,7 +227,7 @@ public class TestRandomizedTest extends RandomizedTest {
     Throwable t = new Throwable();
     try {
       assumeNoException(message, t);
-    } catch (AssumptionViolatedException e) {
+    } catch (TestAbortedException e) {
       assertTrue(e.getMessage().contains(message));
       assertSame(t, e.getCause());
     }
@@ -259,6 +259,6 @@ public class TestRandomizedTest extends RandomizedTest {
     }
 
     double rf = rarely / (double) calls * 100;
-    assertTrue("rarely should be > 5% & < 15%: " + rf, rf > 5 && rf < 15);
+    assertTrue(rf > 5 && rf < 15, "rarely should be > 5% & < 15%: " + rf);
   }  
 }

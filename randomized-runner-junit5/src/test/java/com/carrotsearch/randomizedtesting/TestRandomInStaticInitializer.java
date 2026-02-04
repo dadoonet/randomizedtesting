@@ -2,9 +2,9 @@ package com.carrotsearch.randomizedtesting;
 
 import java.util.Random;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Check out of scope {@link Random} use.

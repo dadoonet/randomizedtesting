@@ -4,21 +4,19 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Suite.class)
-@SuiteClasses({
-  TestCodepointSetGenerator.CodepointSetOnChars.class,
-  TestCodepointSetGenerator.CodepointSetOnCodePoints.class,
-  TestCodepointSetGenerator.CodepointSetOnSurrogatesOnly.class
-})
+/**
+ * Tests for CodepointSetGenerator.
+ */
+@ExtendWith(RandomizedExtension.class)
 public class TestCodepointSetGenerator extends RandomizedTest {
   private final static int [] codepoints = {
     'a', 'b', 'c', 'd',
@@ -37,7 +35,8 @@ public class TestCodepointSetGenerator extends RandomizedTest {
 
   private final static String withSurrogates = new String(codepoints, 0, codepoints.length);
 
-  public static class CodepointSetOnChars extends StringGeneratorTestBase {
+  @Nested
+  public class CodepointSetOnChars extends StringGeneratorTestBase {
     public CodepointSetOnChars() {
       super(new CodepointSetGenerator(new char[] {
           'a', 'b', 'c', 'd',
@@ -66,13 +65,14 @@ public class TestCodepointSetGenerator extends RandomizedTest {
       assertTrue(chars.isEmpty());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testSurrogatesInConstructor() {
       new CodepointSetGenerator(withSurrogates.toCharArray());
     }
   }
 
-  public static class CodepointSetOnCodePoints extends StringGeneratorTestBase {
+  @Nested
+  public class CodepointSetOnCodePoints extends StringGeneratorTestBase {
     public CodepointSetOnCodePoints() {
       super(new CodepointSetGenerator(withSurrogates));      
     }
@@ -97,12 +97,13 @@ public class TestCodepointSetGenerator extends RandomizedTest {
     }    
   }
   
-  public static class CodepointSetOnSurrogatesOnly extends StringGeneratorTestBase {
+  @Nested
+  public class CodepointSetOnSurrogatesOnly extends StringGeneratorTestBase {
     public CodepointSetOnSurrogatesOnly() {
       super(new CodepointSetGenerator(new String(surrogates, 0, surrogates.length)));      
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testOddCodePoints() {
       generator.ofCodeUnitsLength(getRandom(), 3, 3);
     }

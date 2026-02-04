@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestRandomPicks extends RandomizedTest {
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testRandomFromEmptyCollection() {
     RandomPicks.randomFrom(getRandom(), new HashSet<Object>());
   }
@@ -23,12 +23,12 @@ public class TestRandomPicks extends RandomizedTest {
     assertSame(r, t);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testRandomFromList() {
     RandomPicks.randomFrom(getRandom(), new ArrayList<Object>());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testRandomFromArray() {
     RandomPicks.randomFrom(getRandom(), new Object[] {});
   }

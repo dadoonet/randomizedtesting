@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 
@@ -21,7 +21,7 @@ public class TestParameterizedShufflesOrder extends WithNestedTestClass {
       this.value = value;
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void checkNested() {
       assumeRunningNested();
     }

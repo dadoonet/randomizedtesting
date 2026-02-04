@@ -3,48 +3,49 @@ package com.carrotsearch.randomizedtesting.contracts;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Request;
-import org.junit.runners.model.Statement;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 /**
- * {@link ClassRule} support.
+ * Class-level extension support (equivalent to JUnit 4 ClassRule).
  */
 public class TestClassRules extends WithNestedTestClass {
   final static List<String> order = new ArrayList<>();
   
-  public static class ClassRuleSupport {
-    @ClassRule
-    public static TestRule rules = RuleChain.outerRule(new TestRule() {
-      @Override
-      public Statement apply(final Statement base, Description description) {
-        return new Statement() {
-          public void evaluate() throws Throwable {
-            order.add("rule-before");
-            base.evaluate();
-            order.add("rule-after");
-          }
-        };
-      }
-    });
+  /**
+   * Extension that replaces the JUnit 4 ClassRule
+   */
+  public static class ClassRuleEquivalent implements BeforeAllCallback, AfterAllCallback {
+    @Override
+    public void beforeAll(ExtensionContext context) {
+      order.add("rule-before");
+    }
+    
+    @Override
+    public void afterAll(ExtensionContext context) {
+      order.add("rule-after");
+    }
+  }
 
-    @BeforeClass
+  @ExtendWith({RandomizedExtension.class, ClassRuleEquivalent.class})
+  public static class ClassRuleSupport {
+    @BeforeAll
     public static void beforeClass() {
       order.add("before-class");
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
       order.add("after-class");
     }
@@ -56,20 +57,17 @@ public class TestClassRules extends WithNestedTestClass {
   }
   
   @Test
-  public void checkOldMethodRules() throws Exception {
-    assertSameExecution(ClassRuleSupport.class);
-  }
-
-  private void assertSameExecution(Class<?> clazz) throws Exception {
+  public void checkClassExtension() throws Exception {
     order.clear();
-    runTests(clazz);
-    List<String> order1 = new ArrayList<>(order);
-    order.clear();
+    FullResult result = runTests(ClassRuleSupport.class);
     
-    new JUnitCore().run(Request.runner(new RandomizedRunner(clazz)));
-    List<String> order2 = new ArrayList<>(order);
-    order.clear();
+    // Verify test passed
+    assertEquals(1, result.getRunCount());
+    assertEquals(0, result.getFailureCount());
     
-    Assert.assertEquals(order1, order2);
+    // Verify extension methods were called in correct order
+    Assertions.assertThat(order).containsSequence("rule-before", "before-class");
+    Assertions.assertThat(order).contains("passing");
+    Assertions.assertThat(order).containsSequence("after-class", "rule-after");
   }
 }

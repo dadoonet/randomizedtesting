@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Handler;
@@ -15,30 +16,34 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 import org.assertj.core.api.Assertions;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
-import org.junit.runner.notification.RunListener;
-import org.junit.runners.model.Statement;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.platform.engine.TestExecutionResult;
+import org.junit.platform.launcher.Launcher;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.TestExecutionListener;
+import org.junit.platform.launcher.TestIdentifier;
+import org.junit.platform.launcher.TestPlan;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+import org.junit.platform.launcher.core.LauncherFactory;
+import org.opentest4j.TestAbortedException;
 
-import com.carrotsearch.randomizedtesting.rules.StatementAdapter;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
-import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
+import com.carrotsearch.randomizedtesting.extensions.SystemPropertiesInvariantExtension;
+
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
 /**
- * Utility class to surround nested {@link RandomizedRunner} test suites.
+ * Utility class to surround nested {@link RandomizedExtension} test suites.
  */
+@ExtendWith(RandomizedExtension.class)
 public class WithNestedTestClass {
   private static boolean runningNested;
 
@@ -53,42 +58,49 @@ public class WithNestedTestClass {
     AFTER_CLASS,
   }
 
+  /**
+   * Extension that applies at CLASS_RULE place
+   */
+  public static class ClassRuleExtension implements BeforeAllCallback {
+    @Override
+    public void beforeAll(ExtensionContext context) throws Exception {
+      ApplyAtPlace.apply(Place.CLASS_RULE);
+    }
+  }
+
+  /**
+   * Extension that applies at TEST_RULE place
+   */
+  public static class TestRuleExtension implements BeforeEachCallback {
+    @Override
+    public void beforeEach(ExtensionContext context) throws Exception {
+      ApplyAtPlace.apply(Place.TEST_RULE);
+    }
+  }
+
+  @ExtendWith({RandomizedExtension.class, ClassRuleExtension.class, TestRuleExtension.class})
   public static class ApplyAtPlace extends RandomizedTest {
     public static Place place;
     public static Runnable runnable;
 
-    @ClassRule
-    public static TestRule classRule = new TestRuleAdapter() {
-      protected void before() throws Throwable {
-        ApplyAtPlace.apply(Place.CLASS_RULE);
-      }
-    };
-
-    @BeforeClass 
+    @BeforeAll 
     public static void beforeClass() { apply(Place.BEFORE_CLASS); }
 
     public ApplyAtPlace() { apply(Place.CONSTRUCTOR); }
 
-    @Rule
-    public TestRule testRule = new TestRuleAdapter() {
-      protected void before() throws Throwable {
-        ApplyAtPlace.apply(Place.TEST_RULE);
-      }
-    };
-
-    @Before 
+    @BeforeEach 
     public void before() { apply(Place.BEFORE); }
 
     @Test
     public void testMethod() { apply(Place.TEST); }
 
-    @After
+    @AfterEach
     public void after() { apply(Place.AFTER); }
 
-    @AfterClass 
+    @AfterAll 
     public static void afterClass() { apply(Place.AFTER_CLASS); }
 
-    private static void apply(Place p) {
+    static void apply(Place p) {
       if (place == p) {
         assumeRunningNested();
         runnable.run();
@@ -96,32 +108,10 @@ public class WithNestedTestClass {
     }
   }
 
-  static {
-    TestRule dumpLoggerOutputOnFailure = new TestRule() {
-      @Override
-      public Statement apply(Statement base, final Description description) {
-        return new StatementAdapter(base) {
-          protected void afterAlways(java.util.List<Throwable> errors) throws Throwable {
-            if (!errors.isEmpty()) {
-              sysout.println("-- " + description);
-              sysout.println(loggingMessages);
-            }
-          }
-        };
-      }
-    };
-    
-    SystemPropertiesInvariantRule noLeftOverProperties =
-        new SystemPropertiesInvariantRule(new HashSet<String>(Arrays.asList(
-            "user.timezone")));
-    
-    ruleChain = RuleChain
-      .outerRule(noLeftOverProperties)
-      .around(dumpLoggerOutputOnFailure);
-  }
-
-  @ClassRule
-  public final static TestRule ruleChain;
+  @RegisterExtension
+  static SystemPropertiesInvariantExtension noLeftOverProperties =
+      new SystemPropertiesInvariantExtension(new HashSet<String>(Arrays.asList(
+          "user.timezone")));
 
   /** For capturing sysout. */
   protected static PrintStream sysout;
@@ -156,7 +146,7 @@ public class WithNestedTestClass {
 
   private static volatile Object zombieToken;
 
-  @BeforeClass
+  @BeforeAll
   public static final void setupNested() throws IOException {
     runningNested = true;
     zombieToken = new Object();
@@ -189,7 +179,7 @@ public class WithNestedTestClass {
       });
   }
 
-  @AfterClass
+  @AfterAll
   public static final void clearNested() throws Exception {
     zombieToken = null;
     runningNested = false;
@@ -210,14 +200,14 @@ public class WithNestedTestClass {
     }    
   }
 
-  @After
-  public void after() {
-    // Reset zombie thread marker.
-    RandomizedRunner.zombieMarker.set(false);
+  @AfterEach
+  public void afterEach() {
+    // Reset zombie thread marker - this was previously using RandomizedRunner.zombieMarker
+    // In JUnit 5, thread leak detection is handled differently
   }
   
-  @Before
-  public void before() {
+  @BeforeEach
+  public void beforeEach() {
     sw.getBuffer().setLength(0);
     loggingMessages.getBuffer().setLength(0);
   }
@@ -237,7 +227,9 @@ public class WithNestedTestClass {
   }
   
   protected static void assumeRunningNested() {
-    Assume.assumeTrue(runningNested);
+    if (!runningNested) {
+      throw new TestAbortedException("Not running nested");
+    }
   }
   
   protected static Thread startZombieThread(String name) {
@@ -287,35 +279,76 @@ public class WithNestedTestClass {
     return t;
   }
 
+  /**
+   * Result of running tests with JUnit Platform.
+   */
   public static class FullResult {
-    private AtomicInteger assumptionIgnored = new AtomicInteger();
-    private Result result;
+    private final AtomicInteger runCount = new AtomicInteger();
+    private final AtomicInteger ignoreCount = new AtomicInteger();
+    private final AtomicInteger failureCount = new AtomicInteger();
+    private final AtomicInteger assumptionIgnored = new AtomicInteger();
+    private final List<FailureInfo> failures = new ArrayList<>();
     
     public int getRunCount() {
-      return result.getRunCount();
+      return runCount.get();
     }
 
     public int getIgnoreCount() {
-      return result.getIgnoreCount();
+      return ignoreCount.get();
     }
     
     public int getFailureCount() {
-      return result.getFailureCount();
+      return failureCount.get();
     }
 
     public int getAssumptionIgnored() {
       return assumptionIgnored.get();
     }
 
-    public List<Failure> getFailures() {
-      return result.getFailures();
+    public List<FailureInfo> getFailures() {
+      return failures;
     }
 
     public boolean wasSuccessful() {
-      return result.wasSuccessful();
+      return failureCount.get() == 0;
+    }
+  }
+
+  /**
+   * Represents a test failure.
+   */
+  public static class FailureInfo {
+    private final TestIdentifier testIdentifier;
+    private final Throwable exception;
+
+    public FailureInfo(TestIdentifier testIdentifier, Throwable exception) {
+      this.testIdentifier = testIdentifier;
+      this.exception = exception;
+    }
+
+    public TestIdentifier getTestIdentifier() {
+      return testIdentifier;
+    }
+
+    public Throwable getException() {
+      return exception;
+    }
+
+    public String getTrace() {
+      StringWriter sw = new StringWriter();
+      exception.printStackTrace(new java.io.PrintWriter(sw));
+      return sw.toString();
+    }
+
+    @Override
+    public String toString() {
+      return testIdentifier.getDisplayName() + ": " + exception.getMessage();
     }
   }
   
+  /**
+   * Run tests using JUnit Platform Launcher.
+   */
   public static FullResult runTests(final Class<?>... classes) {
     try {
       final FullResult fullResult = new FullResult();
@@ -324,16 +357,44 @@ public class WithNestedTestClass {
       Thread thread = new Thread() {
         @Override
         public void run() {
-          final JUnitCore core = new JUnitCore();
-          core.addListener(new PrintEventListener(sysout));
-          core.addListener(new RunListener() {
+          LauncherDiscoveryRequestBuilder requestBuilder = LauncherDiscoveryRequestBuilder.request();
+          for (Class<?> clazz : classes) {
+            requestBuilder.selectors(selectClass(clazz));
+          }
+          LauncherDiscoveryRequest request = requestBuilder.build();
+          
+          Launcher launcher = LauncherFactory.create();
+          
+          // Add our print listener
+          launcher.registerTestExecutionListeners(new PrintEventListener(sysout));
+          
+          // Add result collecting listener
+          launcher.registerTestExecutionListeners(new TestExecutionListener() {
             @Override
-            public void testAssumptionFailure(Failure failure) {
-              fullResult.assumptionIgnored.incrementAndGet();
+            public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
+              if (testIdentifier.isTest()) {
+                fullResult.runCount.incrementAndGet();
+                
+                if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
+                  fullResult.failureCount.incrementAndGet();
+                  Optional<Throwable> throwable = testExecutionResult.getThrowable();
+                  fullResult.failures.add(new FailureInfo(testIdentifier, 
+                      throwable.orElse(new RuntimeException("Unknown failure"))));
+                } else if (testExecutionResult.getStatus() == TestExecutionResult.Status.ABORTED) {
+                  fullResult.assumptionIgnored.incrementAndGet();
+                }
+              }
+            }
+            
+            @Override
+            public void executionSkipped(TestIdentifier testIdentifier, String reason) {
+              if (testIdentifier.isTest()) {
+                fullResult.ignoreCount.incrementAndGet();
+              }
             }
           });
 
-          fullResult.result = core.run(classes);
+          launcher.execute(request);
         }
       };
 

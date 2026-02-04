@@ -1,17 +1,17 @@
 package com.carrotsearch.randomizedtesting.contracts;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
@@ -26,14 +26,14 @@ public class TestAssumptionsAtClassLevel extends WithNestedTestClass {
    * Test superclass.
    */
   public static class Super extends RandomizedTest {
-    @BeforeClass
+    @BeforeAll
     public static void beforeClassSuper() {
       assumeRunningNested();
       callOrder.add("beforeClassSuper");
-      Assume.assumeTrue(false);
+      assumeTrue(false);
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClassSuper() {
       callOrder.add("afterClassSuper");
     }
@@ -43,12 +43,12 @@ public class TestAssumptionsAtClassLevel extends WithNestedTestClass {
    * Test subclass.
    */
   public static class SubSub extends Super {
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
       callOrder.add("beforeClassSub");
     }
 
-    @Before
+    @BeforeEach
     public void beforeTestSub() {
       callOrder.add("beforeTestSub");
     }
@@ -58,18 +58,18 @@ public class TestAssumptionsAtClassLevel extends WithNestedTestClass {
       callOrder.add("testMethodSub");
     }
 
-    @After
+    @AfterEach
     public void afterTestSub() {
       callOrder.add("afterTestSub");
     }
     
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
       callOrder.add("afterClassSub");
     }
   }
 
-  @Before
+  @BeforeEach
   public void cleanup() {
     callOrder.clear();
   }

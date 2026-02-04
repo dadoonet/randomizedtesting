@@ -1,23 +1,19 @@
 package com.carrotsearch.randomizedtesting;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runner.notification.Failure;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.carrotsearch.randomizedtesting.annotations.Seed;
 
 /**
- * {@link RandomizedRunner} can augment stack traces to include seed info. Check
- * if it works.
+ * RandomizedExtension can augment stack traces to include seed info. Check if it works.
  */
 public class TestStackAugmentation extends WithNestedTestClass {
-  @RunWith(RandomizedRunner.class)
+  @ExtendWith(RandomizedExtension.class)
   @Seed("deadbeef")
   public static class Nested {
     @Test @Seed("cafebabe")
@@ -37,16 +33,17 @@ public class TestStackAugmentation extends WithNestedTestClass {
   public void testMethodLevel() {
     FullResult result = checkTestsOutput(1, 0, 1, 0, Nested.class);
 
-    Failure f = result.getFailures().get(0);
-    String seedFromThrowable = RandomizedRunner.seedFromThrowable(f.getException());
+    FailureInfo f = result.getFailures().get(0);
+    String seedFromThrowable = RandomizedRunnerConstants.seedFromThrowable(f.getException());
     assertNotNull(seedFromThrowable);
-    assertTrue("[DEADBEEF:CAFEBABE]".compareToIgnoreCase(seedFromThrowable) == 0);
+    assertTrue("[DEADBEEF:CAFEBABE]".compareToIgnoreCase(seedFromThrowable) == 0,
+        "Expected seed in trace, got: " + seedFromThrowable);
   }
 
-  @RunWith(RandomizedRunner.class)
+  @ExtendWith(RandomizedExtension.class)
   @Seed("deadbeef")
   public static class Nested2 {
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
       assumeRunningNested();
       throw new Error("beforeclass.");
@@ -62,16 +59,17 @@ public class TestStackAugmentation extends WithNestedTestClass {
     FullResult result = checkTestsOutput(0, 0, 1, 0, Nested2.class);
     assertEquals(1, result.getFailureCount());
 
-    Failure f = result.getFailures().get(0);
-    String seedFromThrowable = RandomizedRunner.seedFromThrowable(f.getException());
+    FailureInfo f = result.getFailures().get(0);
+    String seedFromThrowable = RandomizedRunnerConstants.seedFromThrowable(f.getException());
     assertNotNull(seedFromThrowable);
-    assertTrue(f.getTrace(), "[DEADBEEF]".compareToIgnoreCase(seedFromThrowable) == 0);
+    assertTrue("[DEADBEEF]".compareToIgnoreCase(seedFromThrowable) == 0,
+        "Expected seed in trace: " + f.getTrace());
   }
 
-  @RunWith(RandomizedRunner.class)
+  @ExtendWith(RandomizedExtension.class)
   @Seed("deadbeef")
   public static class Nested3 {
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
       assumeRunningNested();
       throw new Error("afterclass.");
@@ -86,9 +84,10 @@ public class TestStackAugmentation extends WithNestedTestClass {
   public void testAfterClass() {
     FullResult result = checkTestsOutput(1, 0, 1, 0, Nested3.class);
 
-    Failure f = result.getFailures().get(0);
-    String seedFromThrowable = RandomizedRunner.seedFromThrowable(f.getException());
+    FailureInfo f = result.getFailures().get(0);
+    String seedFromThrowable = RandomizedRunnerConstants.seedFromThrowable(f.getException());
     assertNotNull(seedFromThrowable);
-    assertTrue(f.getTrace(), "[DEADBEEF]".compareToIgnoreCase(seedFromThrowable) == 0);
+    assertTrue("[DEADBEEF]".compareToIgnoreCase(seedFromThrowable) == 0,
+        "Expected seed in trace: " + f.getTrace());
   }  
 }

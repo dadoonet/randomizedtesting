@@ -150,9 +150,9 @@ public class RandomizedExtension implements
     ClassModel classModel = new ClassModel(testClass);
     store.put(KEY_CLASS_MODEL, classModel);
 
-    // Create thread group for this test class
-    RunnerThreadGroup threadGroup = new RunnerThreadGroup(
-        "TGRP-" + Classes.simpleName(testClass));
+    // Use the current thread's thread group for context registration
+    // This is important because JUnit 5 runs tests in the main thread group
+    ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
     store.put(KEY_THREAD_GROUP, threadGroup);
 
     // Set up uncaught exception handler

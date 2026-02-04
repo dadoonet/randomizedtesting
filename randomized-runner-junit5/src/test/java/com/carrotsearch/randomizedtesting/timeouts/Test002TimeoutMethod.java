@@ -1,6 +1,6 @@
 package com.carrotsearch.randomizedtesting.timeouts;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.Utils;

@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.assertj.core.api.Assertions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class TestOverridingDefaultExceptionHandler extends WithNestedTestClass {
   static List<String> throwableMessages = new CopyOnWriteArrayList<>();
@@ -22,7 +22,7 @@ public class TestOverridingDefaultExceptionHandler extends WithNestedTestClass {
   public static class Nested extends RandomizedTest {
     private static UncaughtExceptionHandler defaultHandler;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
       defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
       Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
@@ -36,7 +36,7 @@ public class TestOverridingDefaultExceptionHandler extends WithNestedTestClass {
       });
     }
     
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
       Thread.setDefaultUncaughtExceptionHandler(defaultHandler);
     }

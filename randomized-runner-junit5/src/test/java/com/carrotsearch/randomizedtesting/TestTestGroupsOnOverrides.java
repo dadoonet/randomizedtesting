@@ -1,9 +1,9 @@
 package com.carrotsearch.randomizedtesting;
 
 import com.carrotsearch.randomizedtesting.annotations.TestGroup;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.*;
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ public class TestTestGroupsOnOverrides extends WithNestedTestClass {
   static List<String> buf;
 
   public static class Super extends RandomizedTest {
-    @Before
+    @BeforeEach
     public void assumeNested() {
       assumeRunningNested();
     }
@@ -26,13 +26,13 @@ public class TestTestGroupsOnOverrides extends WithNestedTestClass {
     }
   }
 
-  @Before
+  @BeforeEach
   public void clean() {
     buf = new ArrayList<>();
   }
 
   public static class Ignored extends Super {
-    @Ignore
+    @Disabled
     public void method() {
       buf.add("sub:method");
     }

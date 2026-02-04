@@ -1,13 +1,16 @@
 package com.carrotsearch.randomizedtesting;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.Callable;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
+ * Tests for RandomizedContext.
  */
+@ExtendWith(RandomizedExtension.class)
 public class TestRandomizedContext extends RandomizedTest {
 
   @Test
@@ -40,7 +43,7 @@ public class TestRandomizedContext extends RandomizedTest {
       });
       assertNotNull(second);
       assertNotSame(first, second);
-      assertArrayEquals("first and second sequence must be identical", first, second);
+      assertArrayEquals(first, second, "first and second sequence must be identical");
     }
   }
 

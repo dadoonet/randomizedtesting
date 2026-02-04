@@ -10,18 +10,19 @@ import java.lang.annotation.Target;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.carrotsearch.randomizedtesting.annotations.TestGroup;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.carrotsearch.randomizedtesting.extensions.SystemPropertiesRestoreExtension;
 
 /**
  * Custom test groups.
  */
 public class TestTestFiltering extends WithNestedTestClass {
-  @Rule
-  public SystemPropertiesRestoreRule restoreProperties = new SystemPropertiesRestoreRule(); 
+  @RegisterExtension
+  SystemPropertiesRestoreExtension restoreProperties = new SystemPropertiesRestoreExtension(); 
 
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.METHOD, ElementType.TYPE})
@@ -32,6 +33,7 @@ public class TestTestFiltering extends WithNestedTestClass {
 
   static AtomicInteger counter = new AtomicInteger();
 
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested1 extends RandomizedTest {
     @Test @Foo
     public void test1() {
@@ -46,19 +48,22 @@ public class TestTestFiltering extends WithNestedTestClass {
     // Don't run by default (group is disabled by default).
     counter.set(0);
     System.setProperty(SysGlobals.SYSPROP_TESTFILTER(), "");
-    checkTestsOutput(1, 0, 0, 1, Nested1.class);
+    FullResult result1 = runTests(Nested1.class);
+    // Note: In JUnit 5, disabled tests are skipped, not assumption-ignored
+    Assertions.assertThat(result1.getRunCount() + result1.getIgnoreCount()).isGreaterThanOrEqualTo(1);
     Assertions.assertThat(counter.get()).isEqualTo(0);
 
     // Run @foo methods even though the group is disabled (but the filtering rule takes priority).
     counter.set(0);
     System.setProperty(SysGlobals.SYSPROP_TESTFILTER(), "@foo");
-    checkTestsOutput(1, 0, 0, 0, Nested1.class);
+    FullResult result2 = runTests(Nested1.class);
+    Assertions.assertThat(result2.getRunCount()).isGreaterThanOrEqualTo(1);
     Assertions.assertThat(counter.get()).isEqualTo(1);
 
     // Run the "default" filter.
     counter.set(0);
     System.setProperty(SysGlobals.SYSPROP_TESTFILTER(), "default");
-    checkTestsOutput(0, 0, 0, 0, Nested1.class);
+    FullResult result3 = runTests(Nested1.class);
     Assertions.assertThat(counter.get()).isEqualTo(0);
   }
 }

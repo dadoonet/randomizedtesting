@@ -1,7 +1,7 @@
 package com.carrotsearch.randomizedtesting;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Check that {@link BeforeClass} hooks are called before instance initializers.
@@ -16,7 +16,7 @@ public class TestInstantiationTime extends RandomizedTest {
    */
   public String copyOfStatic = constant.toUpperCase();
   
-  @BeforeClass
+  @BeforeAll
   public static void prepare() {
     constant = "constant";
   }

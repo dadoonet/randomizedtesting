@@ -4,7 +4,7 @@ import java.util.Locale;
 import java.util.Random;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.generators.BiasedNumbers;

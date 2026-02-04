@@ -3,7 +3,7 @@ package com.carrotsearch.randomizedtesting;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;

@@ -1,7 +1,7 @@
 package com.carrotsearch.randomizedtesting.snippets;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
@@ -11,7 +11,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TheGoodBadAndUglySnippet extends WithNestedTestClass {
   /**
@@ -19,7 +19,7 @@ public class TheGoodBadAndUglySnippet extends WithNestedTestClass {
    * but at the same time snippety tests won't execute in Eclipse.
    */
   public static class RandomizedTest extends com.carrotsearch.randomizedtesting.RandomizedTest {
-    @BeforeClass
+    @BeforeAll
     public static void runAsTest() {
       assumeRunningNested();
     }

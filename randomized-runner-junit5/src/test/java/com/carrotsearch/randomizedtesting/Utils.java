@@ -4,18 +4,18 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
 
+import com.carrotsearch.randomizedtesting.WithNestedTestClass.FailureInfo;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass.FullResult;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Utils {
   /**
    * Assert a result has at least one failure with message.
    */
   public static void assertFailureWithMessage(FullResult r, String message) {
-    for (Failure f : r.getFailures()) {
+    for (FailureInfo f : r.getFailures()) {
       if (f.getTrace().contains(message)) {
         return;
       }
@@ -23,16 +23,16 @@ public class Utils {
 
     StringBuilder b = new StringBuilder("No failure with message: '" + message + "' (" +
         r.getFailures().size() + " failures):");
-    for (Failure f : r.getFailures()) {
+    for (FailureInfo f : r.getFailures()) {
       b.append("\n\t- ").append(f.getTrace());
     }
     Logger.getLogger("").severe(b.toString());
-    Assert.fail(b.toString());
+    fail(b.toString());
   }
 
-  public static void assertNoFailureWithMessage(Result r, String message) {
+  public static void assertNoFailureWithMessage(FullResult r, String message) {
     boolean hadMessage = false;
-    for (Failure f : r.getFailures()) {
+    for (FailureInfo f : r.getFailures()) {
       if (f.getTrace().contains(message)) {
         hadMessage = true;
       }
@@ -42,11 +42,11 @@ public class Utils {
 
     StringBuilder b = new StringBuilder("Failure with message: '" + message + "' (" +
         r.getFailures().size() + " failures):");
-    for (Failure f : r.getFailures()) {
+    for (FailureInfo f : r.getFailures()) {
       b.append("\n\t- ").append(f.getTrace());
     }
     Logger.getLogger("").severe(b.toString());
-    Assert.fail(b.toString());
+    fail(b.toString());
   }
 
   /**
@@ -54,9 +54,9 @@ public class Utils {
    * a synthetic seed frame.
    */
   public static void assertFailuresContainSeeds(FullResult r) {
-    for (Failure f : r.getFailures()) {
-      String seed = RandomizedRunner.seedFromThrowable(f.getException());
-      Assert.assertTrue("Not augmented: " + f.getTrace(), seed != null);
+    for (FailureInfo f : r.getFailures()) {
+      String seed = RandomizedRunnerConstants.seedFromThrowable(f.getException());
+      assertTrue(seed != null, "Not augmented: " + f.getTrace());
     }
   }
 

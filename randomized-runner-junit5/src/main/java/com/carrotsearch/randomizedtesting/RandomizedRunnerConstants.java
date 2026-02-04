@@ -15,7 +15,7 @@ public final class RandomizedRunnerConstants {
   /**
    * Package name used for augmented seed info.
    */
-  static final String AUGMENTED_SEED_PACKAGE = "com.carrotsearch.randomizedtesting";
+  public static final String AUGMENTED_SEED_PACKAGE = "com.carrotsearch.randomizedtesting";
 
   /**
    * Shared logger for the randomized testing framework.
@@ -102,7 +102,7 @@ public final class RandomizedRunnerConstants {
   /**
    * Extract seed information from a throwable's stack trace, if present.
    */
-  private static String seedFromThrowable(Throwable t) {
+  public static String seedFromThrowable(Throwable t) {
     for (StackTraceElement ste : t.getStackTrace()) {
       if (ste.getClassName().equals(AUGMENTED_SEED_PACKAGE + ".SeedInfo") &&
           ste.getMethodName().startsWith("seed")) {

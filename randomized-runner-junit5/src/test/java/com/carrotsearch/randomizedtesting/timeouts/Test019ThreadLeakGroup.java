@@ -3,8 +3,8 @@ package com.carrotsearch.randomizedtesting.timeouts;
 import java.util.concurrent.CountDownLatch;
 
 import org.assertj.core.api.Assertions;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.Utils;
@@ -72,7 +72,7 @@ public class Test019ThreadLeakGroup extends WithNestedTestClass {
     Utils.assertFailureWithMessage(r, "1 thread leaked from TEST");
   }
 
-  @After
+  @AfterEach
   public void cleanup() throws Exception {
     if (t != null) {
       t.interrupt();

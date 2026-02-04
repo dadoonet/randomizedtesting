@@ -2,18 +2,18 @@ package com.carrotsearch.randomizedtesting;
 
 import static com.carrotsearch.randomizedtesting.SysGlobals.SYSPROP_ITERATIONS;
 import static com.carrotsearch.randomizedtesting.SysGlobals.SYSPROP_RANDOM_SEED;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Seed fixing for static fixtures and/or methods using system properties.
@@ -21,9 +21,9 @@ import org.junit.runner.RunWith;
 public class TestSeedFixingWithProperties extends WithNestedTestClass {
   static List<Long> seeds = new ArrayList<Long>();
 
-  @RunWith(RandomizedRunner.class)
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested {
-    @BeforeClass
+    @BeforeAll
     public static void staticFixture() {
       seeds.add(RandomizedContext.current().getRandomness().getSeed());
     }
@@ -68,12 +68,12 @@ public class TestSeedFixingWithProperties extends WithNestedTestClass {
     assertEquals(copy, seeds);
   }
 
-  @Before
+  @BeforeEach
   public void cleanupBefore() {
     cleanupAfter();
   }
   
-  @After
+  @AfterEach
   public void cleanupAfter() {
     System.clearProperty(SYSPROP_ITERATIONS());
     System.clearProperty(SYSPROP_RANDOM_SEED());

@@ -1,16 +1,16 @@
 package com.carrotsearch.randomizedtesting;
 
 import org.assertj.core.api.Assertions;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
 public class TestTargetMethod extends WithNestedTestClass {
   public static class Nested extends RandomizedTest {
-    @Before
+    @BeforeEach
     public void checkInHook() {
       assumeRunningNested();
     }
@@ -28,8 +28,8 @@ public class TestTargetMethod extends WithNestedTestClass {
         .isEqualTo("testTwo");
     }
     
-    @AfterClass
-    @BeforeClass
+    @AfterAll
+    @BeforeAll
     public static void staticHooks() {
       Assertions.assertThat(RandomizedContext.current().getTargetMethod())
         .isNull();

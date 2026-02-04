@@ -4,7 +4,7 @@ import java.lang.management.ManagementFactory;
 
 import javax.management.MBeanServer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;

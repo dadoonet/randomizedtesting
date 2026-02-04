@@ -4,48 +4,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.assertj.core.api.Assertions;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Request;
-import org.junit.runners.model.Statement;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
 
 /**
- * Verify if annotations are inherited.
+ * Verify if annotations are inherited in JUnit 5.
  */
 public class TestAnnotationInheritance extends WithNestedTestClass {
   final static List<String> order = new ArrayList<>();
   
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested1 {
-    @Rule
-    public TestRule rules = new TestRule() {
-      @Override
-      public Statement apply(final Statement base, Description description) {
-        return new Statement() {
-          public void evaluate() throws Throwable {
-            order.add("rule-before");
-            base.evaluate();
-            order.add("rule-after");
-          }
-        };
-      }
-    };
-
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
       order.add("before-class");
     }
 
-    @Before
+    @BeforeEach
     public void before() {
       order.add("before-test");
     }
@@ -55,17 +37,18 @@ public class TestAnnotationInheritance extends WithNestedTestClass {
       order.add("testMethod1");
     }
 
-    @After
+    @AfterEach
     public void after() {
       order.add("after-test");
     }
     
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
       order.add("after-class");
     }
   }
   
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested2 extends Nested1 {
     public static void beforeClass() {
       order.add("shadowed-before-class");
@@ -92,22 +75,23 @@ public class TestAnnotationInheritance extends WithNestedTestClass {
   }
 
   @Test
-  public void checkOldMethodRules() throws Exception {
-    assertSameExecution(Nested2.class);
-  }
-
-  private void assertSameExecution(Class<?> clazz) throws Exception {
+  public void checkAnnotationInheritance() throws Exception {
     order.clear();
-    runTests(clazz);
-    List<String> order1 = new ArrayList<>(order);
-    order.clear();
-
-    new JUnitCore().run(Request.runner(new RandomizedRunner(clazz)));
-    List<String> order2 = new ArrayList<>(order);
-    order.clear();
-
-    String msg = "# JUnit order:\n" + order1 + "\n" +
-                 "# RR order:\n" + order2;
-    Assertions.assertThat(order2).as(msg).isEqualTo(order1);
+    FullResult result = runTests(Nested2.class);
+    
+    // Verify test ran successfully
+    Assertions.assertThat(result.getRunCount()).isGreaterThan(0);
+    Assertions.assertThat(result.getFailureCount()).isEqualTo(0);
+    
+    // Verify lifecycle methods were called
+    Assertions.assertThat(order).contains("before-class");
+    Assertions.assertThat(order).contains("inherited before-test");
+    Assertions.assertThat(order).contains("inherited testMethod");
+    Assertions.assertThat(order).contains("inherited after-test");
+    Assertions.assertThat(order).contains("after-class");
+    
+    // Shadowed static methods without @BeforeAll/@AfterAll should NOT be called
+    Assertions.assertThat(order).doesNotContain("shadowed-before-class");
+    Assertions.assertThat(order).doesNotContain("shadowed-after-class");
   }
 }

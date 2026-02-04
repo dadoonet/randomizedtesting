@@ -1,23 +1,23 @@
 package com.carrotsearch.randomizedtesting;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.carrotsearch.randomizedtesting.annotations.Seed;
 
 public class TestSeedRepeatable extends WithNestedTestClass {
   @Seed("deadbeef")
-  @RunWith(RandomizedRunner.class)
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested {
     static Map<String, Object> seeds = new HashMap<String, Object>();
 
-    @BeforeClass
+    @BeforeAll
     public static void nested() {
       assumeRunningNested();
     }

@@ -6,70 +6,89 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.extensions.StaticFieldsInvariantExtension;
 
+/**
+ * Test for StaticFieldsInvariantExtension.
+ */
 public class TestStaticFieldsInvariantRule extends WithNestedTestClass {
   static int LEAK_THRESHOLD = 5 * 1024 * 1024;
 
+  @ExtendWith(RandomizedExtension.class)
   @ThreadLeakScope(Scope.SUITE)
   public static class Base extends RandomizedTest {
-    private static TestRule assumeNotNestedRule = new TestRule() {
-      public Statement apply(final Statement base, Description description) {
-        return new Statement() {
-          public void evaluate() throws Throwable {
-            assumeRunningNested();
-            base.evaluate();
-          }
-        };
-      }
-    };
-    
-    @ClassRule
-    public static TestRule classRules = 
-      RuleChain
-        .outerRule(assumeNotNestedRule)
-        .around(new StaticFieldsInvariantRule(LEAK_THRESHOLD, true));
+    @RegisterExtension
+    static StaticFieldsInvariantExtension staticFieldsInvariant = 
+        new StaticFieldsInvariantExtension(LEAK_THRESHOLD, true);
 
     @Test
-    public void testEmpty() {}
-  }
-
-  public static class Smaller extends Base {
-    static byte [] field0; 
-    
-    @BeforeClass
-    private static void setup() {
-      field0 = new byte [LEAK_THRESHOLD / 2];
+    public void testEmpty() {
+      assumeRunningNested();
     }
   }
 
-  public static class Exceeding extends Smaller {
+  @ExtendWith(RandomizedExtension.class)
+  @ThreadLeakScope(Scope.SUITE)
+  public static class Smaller extends RandomizedTest {
+    static byte [] field0; 
+
+    @RegisterExtension
+    static StaticFieldsInvariantExtension staticFieldsInvariant = 
+        new StaticFieldsInvariantExtension(LEAK_THRESHOLD, true);
+    
+    @BeforeAll
+    private static void setup() {
+      field0 = new byte [LEAK_THRESHOLD / 2];
+    }
+
+    @Test
+    public void testEmpty() {
+      assumeRunningNested();
+    }
+  }
+
+  @ExtendWith(RandomizedExtension.class)
+  @ThreadLeakScope(Scope.SUITE)
+  public static class Exceeding extends RandomizedTest {
+    static byte [] field0;
     static byte [] field1;
     static byte [] field2;
     static int [] field3;
     static long field4;
     final static long [] field5 = new long [1024];
 
-    @BeforeClass
+    @RegisterExtension
+    static StaticFieldsInvariantExtension staticFieldsInvariant = 
+        new StaticFieldsInvariantExtension(LEAK_THRESHOLD, true);
+
+    @BeforeAll
     private static void setup() {
+      field0 = new byte [LEAK_THRESHOLD / 2];
       field1 = new byte [LEAK_THRESHOLD / 2];
       field2 = new byte [100];
       field3 = new int [100];
     }
+
+    @Test
+    public void testEmpty() {
+      assumeRunningNested();
+    }
   }
 
-  public static class MultipleReferences extends Base {
+  @ExtendWith(RandomizedExtension.class)
+  @ThreadLeakScope(Scope.SUITE)
+  public static class MultipleReferences extends RandomizedTest {
     static Object ref1, ref2, ref3,
                   ref4, ref5, ref6;
 
@@ -79,6 +98,15 @@ public class TestStaticFieldsInvariantRule extends WithNestedTestClass {
       Map<String,Object> map = new HashMap<String,Object>();
       map.put("key", new byte [1024 * 1024 * 2]);
       ref1 = ref2 = ref3 = ref4 = ref5 = ref6 = map;
+    }
+
+    @RegisterExtension
+    static StaticFieldsInvariantExtension staticFieldsInvariant = 
+        new StaticFieldsInvariantExtension(LEAK_THRESHOLD, true);
+
+    @Test
+    public void testEmpty() {
+      assumeRunningNested();
     }
   }
 
@@ -118,16 +146,27 @@ public class TestStaticFieldsInvariantRule extends WithNestedTestClass {
     }
   }
   
-  public static class FailsJava9 extends Base {
-    static Holder field0; 
+  @ExtendWith(RandomizedExtension.class)
+  @ThreadLeakScope(Scope.SUITE)
+  public static class FailsJava9 extends RandomizedTest {
+    static Holder field0;
+
+    @RegisterExtension
+    static StaticFieldsInvariantExtension staticFieldsInvariant = 
+        new StaticFieldsInvariantExtension(LEAK_THRESHOLD, true);
     
-    @BeforeClass
+    @BeforeAll
     private static void setup() throws Exception {
       field0 = new Holder();
     }
+
+    @Test
+    public void testEmpty() {
+      assumeRunningNested();
+    }
   }
 
-  @Test @org.junit.Ignore
+  @Test @Disabled
   public void testJava9Jigsaw() {
     // check if we have Java 9 module system:
     try {

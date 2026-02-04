@@ -2,7 +2,7 @@ package com.carrotsearch.randomizedtesting;
 
 import java.util.Random;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Make sure we can access contexts from a sub-thread group.

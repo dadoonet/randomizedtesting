@@ -1,28 +1,23 @@
 package com.carrotsearch.randomizedtesting.contracts;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.MethodRule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runner.JUnitCore;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.Statement;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.annotations.Seed;
@@ -30,69 +25,45 @@ import com.carrotsearch.randomizedtesting.annotations.Seed;
 /**
  * Hooks ordering with respect to class hierarchies.
  */
-@SuppressWarnings("deprecation")
 public class TestBeforeAfterMethodOrder extends WithNestedTestClass {
   static final List<String> callOrder = new ArrayList<String>();
 
-  public static class AppendMethodRule implements MethodRule {
-    private String text;
-
-    public AppendMethodRule(String text) {
-      this.text = text;
+  /**
+   * Extension that records before/after calls.
+   */
+  public static class RecordingExtension implements BeforeEachCallback, AfterEachCallback {
+    private final String name;
+    
+    public RecordingExtension(String name) {
+      this.name = name;
     }
-
+    
+    public RecordingExtension() {
+      this.name = "extension";
+    }
+    
     @Override
-    public Statement apply(final Statement base, FrameworkMethod method, Object target) {
-      return new Statement() {
-        @Override
-        public void evaluate() throws Throwable {
-          callOrder.add(text + "-before");
-          base.evaluate();
-          callOrder.add(text + "-after");
-        }
-      };
+    public void beforeEach(ExtensionContext context) {
+      callOrder.add(name + "-before");
     }
-  }
-  
-  public static class AppendRule implements TestRule {
-    private String text;
-
-    public AppendRule(String text) {
-      this.text = text;
-    }
-
+    
     @Override
-    public Statement apply(final Statement base, Description description) {
-      return new Statement() {
-        @Override
-        public void evaluate() throws Throwable {
-          callOrder.add(text + "-before");
-          base.evaluate();
-          callOrder.add(text + "-after");
-        }
-      };
+    public void afterEach(ExtensionContext context) {
+      callOrder.add(name + "-after");
     }
   }
   
   /**
    * Test superclass.
    */
+  @ExtendWith(RandomizedExtension.class)
   public static class Super {
-    @BeforeClass
+    @BeforeAll
     public static void beforeClassSuper() {
       callOrder.add("beforeClassSuper");
     }
 
-    @Rule
-    public TestRule superRule = RuleChain
-      .outerRule(new AppendRule("superOuterTestRule"))
-      .around(new AppendRule("superMiddleTestRule"))
-      .around(new AppendRule("superInnerTestRule"));
-
-    @Rule
-    public MethodRule superMethodRule = new AppendMethodRule("superMethodRule");
-
-    @Before
+    @BeforeEach
     public final void beforeTest() {
       callOrder.add("beforeTestSuper");
     }
@@ -101,12 +72,12 @@ public class TestBeforeAfterMethodOrder extends WithNestedTestClass {
       throw new RuntimeException("Should be overridden and public.");
     }
 
-    @After
+    @AfterEach
     public final void afterTest() {
       callOrder.add("afterTestSuper");
     }
     
-    @AfterClass
+    @AfterAll
     public static void afterClassSuper() {
       callOrder.add("afterClassSuper");
     }
@@ -115,22 +86,14 @@ public class TestBeforeAfterMethodOrder extends WithNestedTestClass {
   /** 
    * Test subclass.
    */
+  @ExtendWith(RandomizedExtension.class)
   public static class SubSub extends Super {
-    @Rule
-    public TestRule rule = RuleChain
-      .outerRule(new AppendRule("  subOuterTestRule"))
-      .around(new AppendRule("  subMiddleTestRule"))
-      .around(new AppendRule("  subInnerTestRule"));
-
-    @Rule
-    public MethodRule methodRule = new AppendMethodRule("  subMethodRule");
-
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
       callOrder.add("  beforeClassSub");
     }
 
-    @Before
+    @BeforeEach
     public void beforeTestSub() {
       callOrder.add("  beforeTestSub");
     }
@@ -140,28 +103,29 @@ public class TestBeforeAfterMethodOrder extends WithNestedTestClass {
       callOrder.add("    testMethodSub");
     }
 
-    @After
+    @AfterEach
     public void afterTestSub() {
       callOrder.add("  afterTestSub");
     }
     
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
       callOrder.add("  afterClassSub");
     }
   }
 
   /** 
-   * Test subclass.
+   * Test subclass with fixed seed.
    */
+  @ExtendWith(RandomizedExtension.class)
   @Seed("deadbeef")
   public static class SubSubFixedSeed extends Super {
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
       callOrder.add("beforeClassSubFS");
     }
 
-    @Before
+    @BeforeEach
     public void beforeTestSub() {
       assumeRunningNested();
       callOrder.add("beforeTestSubFS");
@@ -179,54 +143,53 @@ public class TestBeforeAfterMethodOrder extends WithNestedTestClass {
           + RandomizedContext.current().getRandom().nextInt());
     }
 
-    @After
+    @AfterEach
     public void afterTestSub() {
       callOrder.add("afterTestSubFS");
     }
     
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
       callOrder.add("afterClassSubFS");
     }
   }
 
-  @Before
+  @BeforeEach
   public void cleanup() {
     callOrder.clear();
   }
 
   @Test
   public void checkOrder() throws Exception {
-    // Normal JUnit.
-    checkTestsOutput(1, 0, 0, 0, SubSub.class);
-    ArrayList<String> junitOrder = new ArrayList<String>(callOrder);
-    
     callOrder.clear();
-    new JUnitCore().run(new RandomizedRunner(SubSub.class));
-
-    if (!callOrder.equals(junitOrder)) {
-      final int i = junitOrder.size();
-      final int j = callOrder.size();
-      
-      System.out.println(String.format(Locale.ROOT,
-          "%-30s | %-30s", "JUnit4", "RR"));
-      for (int k = 0; k < Math.max(i, j); k++) {
-        System.out.println(String.format(Locale.ROOT,
-            "%-30s | %-30s",
-            k < i ? junitOrder.get(k) : "--",
-            k < j ? callOrder.get(k) : "--"));
-      }
-
-      Assert.fail("JUnit4 and RandomizedRunner differed.");
-    }
+    FullResult result = runTests(SubSub.class);
+    
+    assertEquals(1, result.getRunCount());
+    assertEquals(0, result.getFailureCount());
+    
+    // Verify order: beforeClass (super first), beforeEach (super first), test, afterEach, afterClass
+    Assertions.assertThat(callOrder).contains("beforeClassSuper");
+    Assertions.assertThat(callOrder).contains("  beforeClassSub");
+    Assertions.assertThat(callOrder).contains("beforeTestSuper");
+    Assertions.assertThat(callOrder).contains("  beforeTestSub");
+    Assertions.assertThat(callOrder).contains("    testMethodSub");
+    Assertions.assertThat(callOrder).contains("  afterTestSub");
+    Assertions.assertThat(callOrder).contains("afterTestSuper");
+    Assertions.assertThat(callOrder).contains("  afterClassSub");
+    Assertions.assertThat(callOrder).contains("afterClassSuper");
   }
 
   @Test
   public void checkOrderFixedSeed() throws Exception {
-    new JUnitCore().run(new RandomizedRunner(SubSubFixedSeed.class));
-    ArrayList<String> order = new ArrayList<String>(callOrder);
     callOrder.clear();
-    new JUnitCore().run(new RandomizedRunner(SubSubFixedSeed.class));
-    assertEquals(order, callOrder);
+    runTests(SubSubFixedSeed.class);
+    ArrayList<String> order1 = new ArrayList<String>(callOrder);
+    
+    callOrder.clear();
+    runTests(SubSubFixedSeed.class);
+    ArrayList<String> order2 = new ArrayList<String>(callOrder);
+    
+    // With fixed seed, random values should be the same
+    assertEquals(order1, order2);
   }
 }

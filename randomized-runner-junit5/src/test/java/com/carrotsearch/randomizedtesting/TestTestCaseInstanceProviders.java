@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.IdentityHashMap;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
@@ -19,7 +19,7 @@ public class TestTestCaseInstanceProviders extends WithNestedTestClass {
 
   @TestCaseInstanceProvider(Type.INSTANCE_PER_CONSTRUCTOR_ARGS)
   public static class Nested extends RandomizedTest {
-    @Before
+    @BeforeEach
     public void setup() {
       assumeRunningNested();
       set.put(this, null);
@@ -44,7 +44,7 @@ public class TestTestCaseInstanceProviders extends WithNestedTestClass {
     }
   }
 
-  @Before
+  @BeforeEach
   public void setup() {
     set.clear();
   }
