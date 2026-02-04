@@ -110,6 +110,8 @@ public class RandomizedExtension implements
   private static final String KEY_CLASS_MODEL = "classModel";
   private static final String KEY_THREAD_GROUP = "threadGroup";
   private static final String KEY_HANDLER = "uncaughtHandler";
+  private static final String KEY_SUITE_START = "suiteStart";
+  private static final String KEY_SUITE_TIMEOUT = "suiteTimeout";
 
   /**
    * Package scope logger.
@@ -175,6 +177,10 @@ public class RandomizedExtension implements
     });
     store.put(KEY_HANDLER, handler);
     store.put("previousHandler", previous);
+
+    // Record suite start time and timeout
+    store.put(KEY_SUITE_START, System.currentTimeMillis());
+    store.put(KEY_SUITE_TIMEOUT, getSuiteTimeout(testClass));
 
     // Create and register context
     RandomizedContext randomizedContext = RandomizedContext.create(threadGroup, testClass, runnerRandomness);
@@ -276,7 +282,10 @@ public class RandomizedExtension implements
   public void interceptTestMethod(Invocation<Void> invocation,
                                   ReflectiveInvocationContext<Method> invocationContext,
                                   ExtensionContext extensionContext) throws Throwable {
-    // Check for timeout
+    // Check suite timeout first
+    checkSuiteTimeout(extensionContext);
+    
+    // Check for method timeout
     int timeout = getMethodTimeout(invocationContext.getExecutable(), extensionContext);
     
     if (timeout <= 0) {
@@ -352,6 +361,46 @@ public class RandomizedExtension implements
     }
     
     return DEFAULT_TIMEOUT;
+  }
+
+  /**
+   * Get suite timeout from annotation or system property.
+   */
+  private int getSuiteTimeout(Class<?> testClass) {
+    // Check @TimeoutSuite annotation
+    TimeoutSuite suiteTimeout = testClass.getAnnotation(TimeoutSuite.class);
+    if (suiteTimeout != null) {
+      return suiteTimeout.millis();
+    }
+    
+    // Check system property
+    String sysProp = System.getProperty(SysGlobals.SYSPROP_TIMEOUT_SUITE());
+    if (sysProp != null && !sysProp.isEmpty()) {
+      try {
+        return Integer.parseInt(sysProp);
+      } catch (NumberFormatException e) {
+        // ignore
+      }
+    }
+    
+    return DEFAULT_TIMEOUT_SUITE;
+  }
+
+  /**
+   * Check if suite timeout has been exceeded.
+   */
+  private void checkSuiteTimeout(ExtensionContext context) {
+    Store store = context.getStore(NAMESPACE);
+    Long startTime = store.get(KEY_SUITE_START, Long.class);
+    Integer suiteTimeout = store.get(KEY_SUITE_TIMEOUT, Integer.class);
+    
+    if (startTime != null && suiteTimeout != null && suiteTimeout > 0) {
+      long elapsed = System.currentTimeMillis() - startTime;
+      if (elapsed > suiteTimeout) {
+        throw new TimeoutExtension.TimeoutException(
+            "Suite timeout exceeded (elapsed: " + elapsed + "ms, timeout: " + suiteTimeout + "ms)");
+      }
+    }
   }
 
   /**
