@@ -151,7 +151,49 @@ public class RandomizedExtension implements
 
   @Override
   public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+    // Check class filter
+    String classFilter = System.getProperty(SYSPROP_TESTCLASS());
+    if (classFilter != null && !classFilter.isEmpty()) {
+      Class<?> testClass = context.getRequiredTestClass();
+      if (!matchesGlob(testClass.getName(), classFilter) && 
+          !matchesGlob(testClass.getSimpleName(), classFilter)) {
+        return ConditionEvaluationResult.disabled("Class does not match filter: " + classFilter);
+      }
+    }
+    
+    // Check method filter (only for test methods, not containers)
+    String methodFilter = System.getProperty(SYSPROP_TESTMETHOD());
+    if (methodFilter != null && !methodFilter.isEmpty() && context.getTestMethod().isPresent()) {
+      String methodName = context.getTestMethod().get().getName();
+      if (!matchesGlob(methodName, methodFilter)) {
+        return ConditionEvaluationResult.disabled("Method does not match filter: " + methodFilter);
+      }
+    }
+    
     return testGroupCondition.evaluateExecutionCondition(context);
+  }
+  
+  /**
+   * Matches a string against a simple glob pattern (only supports * wildcard).
+   */
+  private boolean matchesGlob(String text, String pattern) {
+    // Simple glob matching: * matches any sequence
+    String regex = pattern
+        .replace("\\", "\\\\")
+        .replace(".", "\\.")
+        .replace("$", "\\$")
+        .replace("(", "\\(")
+        .replace(")", "\\)")
+        .replace("[", "\\[")
+        .replace("]", "\\]")
+        .replace("{", "\\{")
+        .replace("}", "\\}")
+        .replace("^", "\\^")
+        .replace("+", "\\+")
+        .replace("|", "\\|")
+        .replace("*", ".*")
+        .replace("?", ".");
+    return text.matches(regex);
   }
 
   @Override
