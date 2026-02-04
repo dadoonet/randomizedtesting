@@ -6,6 +6,9 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
@@ -14,9 +17,10 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
- * Checks custom thread ignore policy.
+ * Checks suite timeout stops subsequent tests.
  */
 public class Test020SuiteTimeoutStopsTests extends WithNestedTestClass {
+  @ExtendWith(RandomizedExtension.class)
   @ThreadLeakScope(Scope.SUITE)
   @TimeoutSuite(millis = 500)
   @ThreadLeakLingering(linger = 0)

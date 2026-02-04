@@ -436,8 +436,15 @@ public class RandomizedExtension implements
     Integer iterationsObj = store.get(KEY_ITERATIONS, Integer.class);
     int iterations = (iterationsObj != null) ? iterationsObj : 1;
     
-    // Check for method timeout
+    // Check for method timeout - also consider remaining suite time
     int timeout = getMethodTimeout(invocationContext.getExecutable(), extensionContext);
+    int remainingSuiteTime = getRemainingsuiteTime(extensionContext);
+    if (remainingSuiteTime > 0) {
+      // Use the smaller of method timeout and remaining suite time
+      if (timeout <= 0 || remainingSuiteTime < timeout) {
+        timeout = remainingSuiteTime;
+      }
+    }
     
     // Execute first iteration (already set up by beforeEach)
     executeMethodWithTimeout(invocation, timeout);
@@ -616,6 +623,23 @@ public class RandomizedExtension implements
             "Suite timeout exceeded (elapsed: " + elapsed + "ms, timeout: " + suiteTimeout + "ms)");
       }
     }
+  }
+  
+  /**
+   * Get remaining time until suite timeout.
+   * @return remaining milliseconds, or 0 if no suite timeout is configured
+   */
+  private int getRemainingsuiteTime(ExtensionContext context) {
+    Store store = context.getStore(NAMESPACE);
+    Long startTime = store.get(KEY_SUITE_START, Long.class);
+    Integer suiteTimeout = store.get(KEY_SUITE_TIMEOUT, Integer.class);
+    
+    if (startTime != null && suiteTimeout != null && suiteTimeout > 0) {
+      long elapsed = System.currentTimeMillis() - startTime;
+      long remaining = suiteTimeout - elapsed;
+      return remaining > 0 ? (int) remaining : 1; // At least 1ms to trigger timeout
+    }
+    return 0;
   }
 
   /**
