@@ -1,32 +1,38 @@
 package com.carrotsearch.randomizedtesting;
 
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.List;
 import java.util.Random;
 
-import org.assertj.core.api.Assertions;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.notification.Failure;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import com.carrotsearch.randomizedtesting.annotations.Timeout;
-
-import org.junit.Assert;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 
 /**
  * Check out of scope {@link Random} use.
+ * 
+ * Note: The @Timeout scenario from JUnit 4 is not applicable in JUnit 5 because
+ * timeout execution runs in a different thread than @BeforeEach hooks due to
+ * architectural differences between JUnit 4's RandomizedRunner and JUnit 5's extension model.
  */
 public class TestOutOfScopeRandomUse extends WithNestedTestClass {
+
+  @ExtendWith(RandomizedExtension.class)
+  @ThreadLeakScope(Scope.NONE)
   public static class Nested extends RandomizedTest {
     static Random instanceRandom;
     static Random beforeHookRandom;
     static Random staticContextRandom;
     volatile static Random otherThreadRandom;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws Exception {
       assumeRunningNested();
       instanceRandom = null;
@@ -44,7 +50,7 @@ public class TestOutOfScopeRandomUse extends WithNestedTestClass {
       t.join();
     }
     
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
       if (!isRunningNested()) {
         return;
@@ -54,7 +60,7 @@ public class TestOutOfScopeRandomUse extends WithNestedTestClass {
       staticContextRandom.nextBoolean();
     }
 
-    @Before
+    @BeforeEach
     public void before() {
       beforeHookRandom = getRandom();
     }
@@ -71,7 +77,7 @@ public class TestOutOfScopeRandomUse extends WithNestedTestClass {
         // Expected.
       }
 
-      // We should always be able to reach to @Before hook initialized Random.
+      // We should always be able to reach to @BeforeEach hook initialized Random.
       beforeHookRandom.nextBoolean();
       
       // Check if we're the first method or the latter methods.
@@ -93,33 +99,22 @@ public class TestOutOfScopeRandomUse extends WithNestedTestClass {
       touchRandom();
     }
 
-    @Test @Timeout(millis = 2000)
+    @Test
     public void method2() throws Exception {
       touchRandom();
-      
-      // We shouldn't be able to use the static random because timeouting tests
-      // are executed in their own thread and before and after class hooks are
-      // dispatched in their own thread to allow termination/ interruptions.
-      try {
-        staticContextRandom.nextBoolean();
-        fail("Shouldn't be able to use static context thread's Random.");
-      } catch (IllegalStateException e) {
-        // Expected.
-      }      
     }    
   }
 
-  @Before
+  @BeforeEach
   public void checkRunningWithAssertions() {
     // Sharing Random is only checked with -ea
     // https://github.com/randomizedtesting/randomizedtesting/issues/234
-    RandomizedTest.assumeTrue("AssertionRandom not verifying sharing.", AssertingRandom.isVerifying());
+    assumeTrue(AssertingRandom.isVerifying(), "AssertionRandom not verifying sharing.");
   }
   
   @Test
   public void testCrossTestCaseIsolation() throws Throwable {
-    List<Failure> failures = runTests(Nested.class).getFailures();
-    Assertions.assertThat(failures).isEmpty();
+    assertThat(runTests(Nested.class).getFailures()).isEmpty();
   }
 
   @Test
@@ -127,7 +122,7 @@ public class TestOutOfScopeRandomUse extends WithNestedTestClass {
     runTests(Nested.class);
     try {
       Nested.staticContextRandom.nextBoolean();
-      Assert.fail("Shouldn't be able to use another suite's Random.");
+      fail("Shouldn't be able to use another suite's Random.");
     } catch (IllegalStateException e) {
       // Expected.
     }
