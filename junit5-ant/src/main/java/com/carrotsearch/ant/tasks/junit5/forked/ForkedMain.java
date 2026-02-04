@@ -22,29 +22,33 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.runner.Description;
-import org.junit.runner.Request;
-import org.junit.runner.Result;
-import org.junit.runner.Runner;
-import org.junit.runner.manipulation.Filter;
-import org.junit.runner.manipulation.NoTestsRemainException;
-import org.junit.runner.notification.Failure;
-import org.junit.runner.notification.RunListener;
-import org.junit.runner.notification.RunNotifier;
+import org.junit.platform.engine.FilterResult;
+import org.junit.platform.engine.TestDescriptor;
+import org.junit.platform.engine.TestSource;
+import org.junit.platform.engine.discovery.DiscoverySelectors;
+import org.junit.platform.engine.support.descriptor.MethodSource;
+import org.junit.platform.launcher.Launcher;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.PostDiscoveryFilter;
+import org.junit.platform.launcher.TestExecutionListener;
+import org.junit.platform.launcher.TestIdentifier;
+import org.junit.platform.launcher.TestPlan;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+import org.junit.platform.launcher.core.LauncherFactory;
 
 import com.carrotsearch.ant.tasks.junit5.events.AppendStdErrEvent;
 import com.carrotsearch.ant.tasks.junit5.events.AppendStdOutEvent;
 import com.carrotsearch.ant.tasks.junit5.events.BootstrapEvent;
 import com.carrotsearch.ant.tasks.junit5.events.Serializer;
 import com.carrotsearch.ant.tasks.junit5.events.SuiteFailureEvent;
-import com.carrotsearch.randomizedtesting.MethodGlobFilter;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.randomizedtesting.SysGlobals;
 import com.carrotsearch.randomizedtesting.annotations.SuppressForbidden;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterators;
 
 /**
- * A forked JVM process running the actual tests on the target JVM.
+ * A forked JVM process running the actual tests on the target JVM using JUnit Platform.
  */
 public class ForkedMain {
   /** Runtime exception. */
@@ -61,12 +65,6 @@ public class ForkedMain {
 
   /**
    * Last resort memory pool released under low memory conditions.
-   * This is not a solution, it's a terrible hack. I know this. Everyone knows this.
-   * Even monkeys in Madagaskar know this. If you know a better solution, patches
-   * welcome. 
-   * 
-   * <p>Approximately 5mb is reserved. Really, smaller values don't make any difference
-   * and the JVM fails to even return the status passed to Runtime.halt().
    */
   static volatile Object lastResortMemory = new byte [1024 * 1024 * 5];
 
@@ -76,13 +74,12 @@ public class ForkedMain {
   static Class<OutOfMemoryError> oomClass = OutOfMemoryError.class;
   
   /**
-   * Frequent event strean flushing.
+   * Frequent event stream flushing.
    */
   public static final String OPTION_FREQUENT_FLUSH = "-flush";
 
   /**
-   * Multiplex sysout and syserr to original streams (aside from
-   * pumping them to event stream).
+   * Multiplex sysout and syserr to original streams.
    */
   public static final String OPTION_SYSOUTS = "-sysouts";
 
@@ -92,35 +89,31 @@ public class ForkedMain {
   public static final String OPTION_STDIN = "-stdin";
 
   /**
-   * Name the sink for events. If given, accepts one argument - name of a file
-   * to which events should be dumped. The file has to be initially empty!
+   * Name the sink for events.
    */
   public static final String OPTION_EVENTSFILE = "-eventsfile";
 
   /**
-   * Should the debug stream from the runner be created? It's named after the events file
-   * with <code>.debug</code> suffix.
+   * Should the debug stream from the runner be created?
    */
   public static final String OPTION_DEBUGSTREAM = "-debug";
 
   /**
-   * User-defined RunListener classes.
+   * User-defined TestExecutionListener classes.
    */
-  public static final String OPTION_RUN_LISTENERS = "-runListeners";
+  public static final String OPTION_LISTENERS = "-listeners";
 
   /**
-   * Fire a runner failure after startup to verify messages
-   * are propagated properly. Not really useful in practice...
+   * Fire a runner failure after startup to verify messages are propagated properly.
    */
   public static final String SYSPROP_FIRERUNNERFAILURE =
       ForkedMain.class.getName() + ".fireRunnerFailure";
 
   /**
-   * Delay the initial bootstrap event from the forked JVM 
-   * (used in tests).
+   * Delay the initial bootstrap event from the forked JVM (used in tests).
    */
   public static final String SYSPROP_FORKEDJVM_DELAY_MS =
-      "junit4.tests.internal.initialDelayMs";
+      "junit5.tests.internal.initialDelayMs";
 
   /**
    * Event sink.
@@ -136,12 +129,11 @@ public class ForkedMain {
   /** Debug stream to flush progress information to. */
   private File debugMessagesFile;
 
-  /** List of RunListener classes */
-  private String runListeners;
+  /** List of TestExecutionListener classes */
+  private String listeners;
 
   /** 
-   * Multiplex calls to System streams to both event stream
-   * and the original streams?
+   * Multiplex calls to System streams to both event stream and the original streams?
    */
   private static boolean multiplexStdStreams = false;
 
@@ -167,114 +159,77 @@ public class ForkedMain {
   }
 
   /**
-   * Execute tests.
+   * Execute tests using JUnit Platform Launcher.
    */
   private void execute(Iterator<String> classNames) throws Throwable {
-    final RunNotifier fNotifier = new OrderedRunNotifier();
-    final Result result = new Result();
-    final Writer debug = debugMessagesFile == null ? new NullWriter() : new OutputStreamWriter(new FileOutputStream(debugMessagesFile), "UTF-8");
+    final Writer debug = debugMessagesFile == null ? new NullWriter() : 
+        new OutputStreamWriter(new FileOutputStream(debugMessagesFile), "UTF-8");
 
-    fNotifier.addListener(result.createListener());
+    // Create the launcher
+    Launcher launcher = LauncherFactory.create();
 
-    fNotifier.addListener(
-        new StreamFlusherDecorator(
-            new NoExceptionRunListenerDecorator(new RunListenerEmitter(serializer)) {
-              @Override
-              protected void exception(Throwable t) {
-                warn("Event serializer exception.", t);
-              }
-            }));
+    // Create the main emitter
+    TestExecutionEmitter emitter = new TestExecutionEmitter(serializer);
+    
+    // Debug listener for flush and logging
+    TestExecutionListener debugListener = createDebugListener(debug);
 
-    fNotifier.addListener(new RunListener() {
-      public void testRunFinished(Result result) throws Exception {
-        debug(debug, "testRunFinished(T:" + result.getRunCount() + ";F:" + result.getFailureCount() + ";I:" + result.getIgnoreCount() + ")");
-        serializer.flush();
-      }
-
-      @Override
-      public void testRunStarted(Description description) throws Exception {
-        debug(debug, "testRunStarted(" + description + ")");
-        serializer.flush();
-      }
-      
-      @Override
-      public void testStarted(Description description) throws Exception {
-        debug(debug, "testStarted(" + description + ")");
-        serializer.flush();
-      }
-      
-      public void testFinished(Description description) throws Exception {
-        debug(debug, "testFinished(" + description + ")");
-        serializer.flush();
-      }
-      
-      @Override
-      public void testIgnored(Description description) throws Exception {
-        debug(debug, "testIgnored(T:" + description + ")");
-      }
-      
-      @Override
-      public void testFailure(Failure failure) throws Exception {
-        debug(debug, "testFailure(T:" + failure + ")");
-      }
-      
-      @Override
-      public void testAssumptionFailure(Failure failure) {
-        try {
-          debug(debug, "testAssumptionFailure(T:" + failure + ")");
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    });
-
-    /*
-     * Instantiate method filter if any.
-     */
+    // Method filter from system property
     String methodFilterGlob = Strings.emptyToNull(System.getProperty(SysGlobals.SYSPROP_TESTMETHOD()));
-    Filter methodFilter = Filter.ALL;
-    if (methodFilterGlob != null) {
-      methodFilter = new MethodGlobFilter(methodFilterGlob);
-    }
 
-    /*
-     * Important. Run each class separately so that we get separate 
-     * {@link RunListener} callbacks for the top extracted description.
-     */
     debug(debug, "Entering main suite loop.");
     try {
       while (classNames.hasNext()) {
         final String clName = classNames.next();
-        debug(debug, "Instantiating: " + clName);
+        debug(debug, "Discovering: " + clName);
+        
         Class<?> clazz = instantiate(clName);
         if (clazz == null) 
           continue;
-  
-        Request request = Request.aClass(clazz);
-        try {
-          Runner runner = request.getRunner();
-          methodFilter.apply(runner);
 
-          // New RunListener instances should be added per class and then removed from the RunNotifier
-          ArrayList<RunListener> runListenerInstances = instantiateRunListeners();
-          for (RunListener runListener : runListenerInstances) {
-            fNotifier.addListener(runListener);
-          }
-
-          fNotifier.fireTestRunStarted(runner.getDescription());
-          debug(debug, "Runner.run(" + clName + ")");
-          runner.run(fNotifier);
-          debug(debug, "Runner.done(" + clName + ")");
-          fNotifier.fireTestRunFinished(result);
-
-          for (RunListener runListener : runListenerInstances) {
-            fNotifier.removeListener(runListener);
-          }
-        } catch (NoTestsRemainException e) {
-          // Don't complain if all methods have been filtered out. 
-          // I don't understand the reason why this exception has been
-          // built in to filters at all.
+        // Build discovery request for this class
+        LauncherDiscoveryRequestBuilder requestBuilder = LauncherDiscoveryRequestBuilder.request()
+            .selectors(DiscoverySelectors.selectClass(clazz));
+        
+        // Add method filter if specified
+        if (methodFilterGlob != null) {
+          final String methodPattern = convertGlobToRegex(methodFilterGlob);
+          requestBuilder.filters((PostDiscoveryFilter) testDescriptor -> {
+            // Only filter test methods, not containers
+            if (testDescriptor.isContainer()) {
+              return FilterResult.included("container");
+            }
+            TestSource source = testDescriptor.getSource().orElse(null);
+            if (source instanceof MethodSource) {
+              String methodName = ((MethodSource) source).getMethodName();
+              if (methodName.matches(methodPattern)) {
+                return FilterResult.included("matches pattern");
+              }
+              return FilterResult.excluded("does not match pattern: " + methodPattern);
+            }
+            return FilterResult.included("no method source");
+          });
         }
+
+        LauncherDiscoveryRequest request = requestBuilder.build();
+
+        // Discover tests
+        TestPlan testPlan = launcher.discover(request);
+        
+        if (!testPlan.containsTests()) {
+          debug(debug, "No tests found in: " + clName);
+          continue;
+        }
+
+        // Register listeners
+        List<TestExecutionListener> allListeners = new ArrayList<>();
+        allListeners.add(emitter);
+        allListeners.add(debugListener);
+        allListeners.addAll(instantiateListeners());
+
+        debug(debug, "Executing: " + clName);
+        launcher.execute(request, allListeners.toArray(new TestExecutionListener[0]));
+        debug(debug, "Done: " + clName);
       }
     } catch (Throwable t) {
       debug(debug, "Main suite loop error: " + t);
@@ -283,6 +238,97 @@ public class ForkedMain {
       debug(debug, "Leaving main suite loop.");
       debug.close();
     }
+  }
+
+  /**
+   * Convert glob pattern to regex for JUnit Platform.
+   */
+  private String convertGlobToRegex(String glob) {
+    StringBuilder regex = new StringBuilder();
+    for (char c : glob.toCharArray()) {
+      switch (c) {
+        case '*':
+          regex.append(".*");
+          break;
+        case '?':
+          regex.append(".");
+          break;
+        case '.':
+        case '(':
+        case ')':
+        case '[':
+        case ']':
+        case '{':
+        case '}':
+        case '\\':
+        case '^':
+        case '$':
+        case '|':
+        case '+':
+          regex.append("\\").append(c);
+          break;
+        default:
+          regex.append(c);
+      }
+    }
+    return regex.toString();
+  }
+
+  /**
+   * Create a debug listener that flushes and logs events.
+   */
+  private TestExecutionListener createDebugListener(final Writer debug) {
+    return new TestExecutionListener() {
+      @Override
+      public void testPlanExecutionStarted(TestPlan testPlan) {
+        try {
+          debug(debug, "testPlanExecutionStarted");
+          serializer.flush();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      @Override
+      public void testPlanExecutionFinished(TestPlan testPlan) {
+        try {
+          debug(debug, "testPlanExecutionFinished");
+          serializer.flush();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      @Override
+      public void executionStarted(TestIdentifier testIdentifier) {
+        try {
+          debug(debug, "executionStarted(" + testIdentifier.getDisplayName() + ")");
+          serializer.flush();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      @Override
+      public void executionFinished(TestIdentifier testIdentifier, 
+          org.junit.platform.engine.TestExecutionResult result) {
+        try {
+          debug(debug, "executionFinished(" + testIdentifier.getDisplayName() + ", " + result.getStatus() + ")");
+          serializer.flush();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      @Override
+      public void executionSkipped(TestIdentifier testIdentifier, String reason) {
+        try {
+          debug(debug, "executionSkipped(" + testIdentifier.getDisplayName() + ", " + reason + ")");
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
   }
 
   private void debug(Writer w, String msg) throws IOException {
@@ -301,7 +347,7 @@ public class ForkedMain {
       try {
         serializer.serialize(
             new SuiteFailureEvent(
-                new Failure(Description.createSuiteDescription(className), t)));
+                TestDescriptionMirror.createSuiteDescription(className), t));
         if (flushFrequently)
           serializer.flush();
       } catch (Exception e) {
@@ -325,10 +371,10 @@ public class ForkedMain {
       // Options.
       boolean debugStream = false;
       boolean flushFrequently = false;
-      File  eventsFile = null;
+      File eventsFile = null;
       boolean suitesOnStdin = false;
       List<String> testClasses = new ArrayList<>();
-      String runListeners = null;
+      String listeners = null;
 
       while (!args.isEmpty()) {
         String option = args.pop();
@@ -345,8 +391,8 @@ public class ForkedMain {
             raf.setLength(0);
             raf.close();
           }
-        } else if (option.equals(OPTION_RUN_LISTENERS)) {
-          runListeners = args.pop();
+        } else if (option.equals(OPTION_LISTENERS)) {
+          listeners = args.pop();
         } else if (option.startsWith(OPTION_DEBUGSTREAM)) {
           debugStream = true;
         } else if (option.startsWith("@")) {
@@ -379,7 +425,7 @@ public class ForkedMain {
       final ForkedMain main = new ForkedMain(serializer);
       main.flushFrequently = flushFrequently;
       main.debugMessagesFile = debugStream ? new File(eventsFile.getAbsolutePath() + ".debug"): null;
-      main.runListeners = runListeners;
+      main.listeners = listeners;
 
       final Iterator<String> stdInput;
       if (suitesOnStdin) { 
@@ -421,12 +467,9 @@ public class ForkedMain {
   }
 
   /**
-   * Try waiting for a GC to happen. This is a dirty heuristic but if we're
-   * here we're neck deep in sh*t anyway (OOMs all over).
+   * Try waiting for a GC to happen.
    */
   private static void tryWaitingForGC() {
-    // We could try to preallocate memory mx bean and count collections...
-    // there is no guarantee it doesn't allocate stuff too though.
     final long duration = TimeUnit.SECONDS.toNanos(2);
     final long startTime = System.nanoTime();
     while (System.nanoTime() - startTime < duration) {
@@ -440,8 +483,7 @@ public class ForkedMain {
   }
 
   /**
-   * Read arguments from a file. Newline delimited, UTF-8 encoded. No fanciness to 
-   * avoid dependencies.
+   * Read arguments from a file.
    */
   private static String[] readArgsFile(String argsFile) throws IOException {
     final ArrayList<String> lines = new ArrayList<String>();
@@ -503,7 +545,7 @@ public class ForkedMain {
   }
 
   /**
-   * Warning emitter. Uses whatever alternative non-event communication channel is.
+   * Warning emitter.
    */
   @SuppressForbidden("legitimate sysstreams.")
   public static void warn(String message, Throwable t) {
@@ -516,7 +558,6 @@ public class ForkedMain {
         try {
           t.printStackTrace(w);
         } catch (OutOfMemoryError e) {
-          // Ignore, OOM.
           w.print(t.getClass().getName());
           w.print(": ");
           w.print(t.getMessage());
@@ -529,20 +570,22 @@ public class ForkedMain {
     } catch (OutOfMemoryError t2) {
       w.println("ERROR: Couldn't even serialize a warning (out of memory).");
     } catch (Throwable t2) {
-      // Can't do anything, really. Probably an OOM?
       w.println("ERROR: Couldn't even serialize a warning.");
     }
   }
 
   /**
-   * Generates JUnit 4 RunListener instances for any user defined RunListeners
+   * Instantiate TestExecutionListener instances for any user defined listeners.
    */
-  private ArrayList<RunListener> instantiateRunListeners() throws Exception {
-    ArrayList<RunListener> instances = new ArrayList<>();
+  private List<TestExecutionListener> instantiateListeners() throws Exception {
+    List<TestExecutionListener> instances = new ArrayList<>();
 
-    if (runListeners != null) {
-      for (String className : Arrays.asList(runListeners.split(","))) {
-        instances.add((RunListener) this.instantiate(className).newInstance());
+    if (listeners != null) {
+      for (String className : Arrays.asList(listeners.split(","))) {
+        Class<?> clazz = instantiate(className);
+        if (clazz != null) {
+          instances.add((TestExecutionListener) clazz.newInstance());
+        }
       }
     }
 

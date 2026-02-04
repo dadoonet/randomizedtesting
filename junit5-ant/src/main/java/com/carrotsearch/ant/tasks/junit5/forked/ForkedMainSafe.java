@@ -1,7 +1,5 @@
 package com.carrotsearch.ant.tasks.junit5.forked;
 
-import java.io.Serializable;
-
 import com.carrotsearch.randomizedtesting.annotations.SuppressForbidden;
 
 @SuppressForbidden("legitimate sysstreams.")
@@ -24,15 +22,16 @@ public class ForkedMainSafe {
   }
 
   /**
-   * Verify JUnit presence and version.
+   * Verify JUnit 5 Platform presence.
    */
   private static void verifyJUnit5Present() {
     try {
-      Class<?> clazz = Class.forName("org.junit.runner.Description");
-      if (!Serializable.class.isAssignableFrom(clazz)) {
-        JvmExit.halt(ForkedMain.ERR_OLD_JUNIT);
-      }
+      // Verify JUnit Platform Launcher is present
+      Class.forName("org.junit.platform.launcher.Launcher");
+      // Verify JUnit Jupiter Engine is present
+      Class.forName("org.junit.jupiter.engine.JupiterTestEngine");
     } catch (ClassNotFoundException e) {
+      System.err.println("JUnit 5 Platform not found on classpath: " + e.getMessage());
       JvmExit.halt(ForkedMain.ERR_NO_JUNIT);
     }
   }  

@@ -41,6 +41,7 @@ import com.carrotsearch.ant.tasks.junit5.events.aggregated.JvmOutputEvent;
 import com.carrotsearch.ant.tasks.junit5.events.aggregated.PartialOutputEvent;
 import com.carrotsearch.ant.tasks.junit5.events.aggregated.TestStatus;
 import com.carrotsearch.ant.tasks.junit5.events.mirrors.FailureMirror;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.randomizedtesting.WriterOutputStream;
 import com.carrotsearch.randomizedtesting.annotations.SuppressForbidden;
 import com.google.common.base.Charsets;
@@ -201,7 +202,7 @@ public class TextReport implements AggregatedEventListener {
   private int showNumFailuresAtEnd = 3;
   
   /** A list of failed tests, if to be displayed at the end. */
-  private List<Description> failedTests = new ArrayList<>();
+  private List<TestDescriptionMirror> failedTests = new ArrayList<>();
 
   /** Stack trace filters. */
   private List<StackTraceFilter> stackFilters = new ArrayList<>();
@@ -391,7 +392,7 @@ public class TextReport implements AggregatedEventListener {
   @Subscribe
   public void onQuit(AggregatedQuitEvent e) throws IOException {
     if (showNumFailuresAtEnd > 0 && !failedTests.isEmpty()) {
-      List<Description> sublist = this.failedTests; 
+      List<TestDescriptionMirror> sublist = this.failedTests; 
       StringBuilder b = new StringBuilder();
       b.append("\nTests with failures [seed: ").append(seed).append("]");
       if (sublist.size() > showNumFailuresAtEnd) {
@@ -399,7 +400,7 @@ public class TextReport implements AggregatedEventListener {
         b.append(" (first " + showNumFailuresAtEnd + " out of " + failedTests.size() + ")");
       }
       b.append(":\n");
-      for (Description description : sublist) {
+      for (TestDescriptionMirror description : sublist) {
         b.append("  - ").append(formatDescription(description, true)).append("\n");
       }
       b.append("\n");
@@ -549,7 +550,7 @@ public class TextReport implements AggregatedEventListener {
   /**
    * Suite prologue.
    */
-  private void emitSuiteStart(Description description, long startTimestamp) throws IOException {
+  private void emitSuiteStart(TestDescriptionMirror description, long startTimestamp) throws IOException {
     String suiteName = description.getDisplayName();
     if (useSimpleNames) {
       if (suiteName.lastIndexOf('.') >= 0) {

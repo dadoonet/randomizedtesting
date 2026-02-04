@@ -10,7 +10,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
-import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -63,7 +62,6 @@ import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.ResourceCollection;
 import org.apache.tools.ant.types.resources.Resources;
 import org.apache.tools.ant.util.LoaderUtils;
-import org.junit.runner.Description;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -81,11 +79,9 @@ import com.carrotsearch.ant.tasks.junit5.events.aggregated.AggregatingListener;
 import com.carrotsearch.ant.tasks.junit5.events.aggregated.ChildBootstrap;
 import com.carrotsearch.ant.tasks.junit5.events.aggregated.JvmOutputEvent;
 import com.carrotsearch.ant.tasks.junit5.listeners.AggregatedEventListener;
-import com.carrotsearch.randomizedtesting.ClassGlobFilter;
 import com.carrotsearch.randomizedtesting.FilterExpressionParser;
 import com.carrotsearch.randomizedtesting.FilterExpressionParser.Node;
-import com.carrotsearch.randomizedtesting.MethodGlobFilter;
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.GlobFilter;
 import com.carrotsearch.randomizedtesting.SeedUtils;
 import com.carrotsearch.randomizedtesting.SysGlobals;
 import com.carrotsearch.randomizedtesting.TeeOutputStream;
@@ -114,9 +110,8 @@ import com.google.common.io.FileWriteMode;
  *  Report listeners use Google Guava's {@link EventBus} and receive full information
  *  about tests' execution (including skipped, assumption-skipped tests, streamlined
  *  output and error stream chunks, etc.).</li>
- *  <li>JUnit 4.10+ is required both for the task and for the tests classpath.
- *  Older versions will cause build failure.</li>
- *  <li>Integration with {@link RandomizedRunner} (randomization seed is passed to
+ *  <li>JUnit 5 Platform is required both for the task and for the tests classpath.</li>
+ *  <li>Integration with RandomizedExtension (randomization seed is passed to
  *  children JVMs).</li>
  * </ul>
  */
@@ -286,7 +281,7 @@ public class JUnit5 extends Task {
   private List<Object> listeners = new ArrayList<>();
 
   /**
-   * User-defined {@link org.junit.runner.notification.RunListener}s.
+   * User-defined {@link org.junit.platform.launcher.TestExecutionListener}s.
    */
   private List<RunListenerClass> runListeners = new ArrayList<>();
 
@@ -297,7 +292,7 @@ public class JUnit5 extends Task {
 
   /**
    * Class loader used to resolve annotations and classes referenced from annotations
-   * when {@link Description}s containing them are passed from forked JVMs.
+   * when test descriptions are passed from forked JVMs.
    */
   private AntClassLoader testsClassLoader;
 
@@ -478,7 +473,7 @@ public class JUnit5 extends Task {
    * Initial random seed used for shuffling test suites and other sources
    * of pseudo-randomness. If not set, any random value is set.
    *
-   * <p>The seed's format is compatible with {@link RandomizedRunner} so that
+   * <p>The seed's format is compatible with RandomizedExtension so that
    * seed can be fixed for suites and methods alike.
    */
   public void setSeed(String randomSeed) {
@@ -1163,16 +1158,13 @@ public class JUnit5 extends Task {
   }
 
   /**
-   * Validate JUnit5 presence in a concrete version.
+   * Validate JUnit 5 Platform presence.
    */
   private void validateJUnit5() throws BuildException {
     try {
-      Class<?> clazz = Class.forName("org.junit.runner.Description");
-      if (!Serializable.class.isAssignableFrom(clazz)) {
-        throw new BuildException("At least JUnit version 4.10 is required on junit5's taskdef classpath.");
-      }
+      Class.forName("org.junit.platform.launcher.Launcher");
     } catch (ClassNotFoundException e) {
-      throw new BuildException("JUnit JAR must be added to junit5 taskdef's classpath.");
+      throw new BuildException("JUnit 5 Platform must be added to junit5 taskdef's classpath.");
     }
   }
 
@@ -1438,11 +1430,11 @@ public class JUnit5 extends Task {
 
     TailInputStream eventStream = new TailInputStream(eventFile);
 
-    // Process user-defined RunListener classes.
+    // Process user-defined TestExecutionListener classes.
     if (!runListeners.isEmpty()) {
       String classNames = runListeners.stream().map(x -> x.getClassName()).collect(Collectors.joining(","));
 
-      commandline.createArgument().setValue(ForkedMain.OPTION_RUN_LISTENERS);
+      commandline.createArgument().setValue(ForkedMain.OPTION_LISTENERS);
       commandline.createArgument().setValue(classNames);
     }
 
@@ -1880,9 +1872,15 @@ public class JUnit5 extends Task {
 
     String testClassFilter = Strings.emptyToNull(getProject().getProperty(SYSPROP_TESTCLASS()));
     if (testClassFilter != null) {
-      ClassGlobFilter filter = new ClassGlobFilter(testClassFilter);
+      // Create a simple class name glob filter
+      GlobFilter filter = new GlobFilter(testClassFilter) {
+        @Override
+        public String describe() {
+          return "Class name matches: " + globPattern;
+        }
+      };
       for (Iterator<TestClass> i = collection.testClasses.iterator(); i.hasNext();) {
-        if (!filter.shouldRun(Description.createSuiteDescription(i.next().className))) {
+        if (!filter.globMatches(i.next().className)) {
           i.remove();
         }
       }
@@ -1911,8 +1909,8 @@ public class JUnit5 extends Task {
     String [] REQUIRED_FORKED_JVM_CLASSES = {
         ForkedMain.class.getName(),
         Strings.class.getName(),
-        MethodGlobFilter.class.getName(),
-        TeeOutputStream.class.getName()
+        TeeOutputStream.class.getName(),
+        SysGlobals.class.getName()
     };
 
     for (String clazz : Arrays.asList(REQUIRED_FORKED_JVM_CLASSES)) {
