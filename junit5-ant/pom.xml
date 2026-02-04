@@ -46,6 +46,25 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- JUnit 4 support for tests (test subject classes executed by the Ant task) -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- Embedded into standalone JAR (shaded). -->
 
     <dependency>
@@ -67,6 +86,14 @@
       <groupId>com.carrotsearch.randomizedtesting</groupId>
       <artifactId>randomizedtesting-runner-junit5</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <!-- JUnit 4 version of randomized runner for test subject classes -->
+    <dependency>
+      <groupId>com.carrotsearch.randomizedtesting</groupId>
+      <artifactId>randomizedtesting-runner</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

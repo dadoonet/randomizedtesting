@@ -10,8 +10,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
@@ -20,8 +22,9 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(RandomizedExtension.class)
 @ThreadLeakScope(Scope.SUITE)
 @ThreadLeakLingering(linger = 1000)
 public class TestEventBusSanityCheck extends RandomizedTest {
@@ -48,47 +51,57 @@ public class TestEventBusSanityCheck extends RandomizedTest {
     final AtomicBoolean hadErrors = new AtomicBoolean();
     
     // Code mirrors JUnit5's behavior.
-    final Deque<String> stealingQueue = new ArrayDeque<String>(foo);
-    aggregatedBus.register(new Object() {
-      volatile Thread foo;
+    ExecutorService executor = Executors.newFixedThreadPool(2);
+    final Deque<ForkedJvmIdle> idle = new ArrayDeque<>();
+    final ForkedJvmIdle e1 = new ForkedJvmIdle();
+    final ForkedJvmIdle e2 = new ForkedJvmIdle();
+    idle.addFirst(e1);
+    idle.addFirst(e2);
 
+    class ExceptionListener {
       @Subscribe
-      public void onForkedJvmIdle(ForkedJvmIdle forkedJvmIdle) {
-        final Thread other = foo;
-        if (other != null) {
-          hadErrors.set(true);
-          throw new RuntimeException("Wtf? two threads in a handler: "
-              + other + " and " + Thread.currentThread());
-        }
-        foo = Thread.currentThread();
-        
-        if (stealingQueue.isEmpty()) {
-          forkedJvmIdle.finished();
-        } else {
-          String suiteName = stealingQueue.pop();
-          forkedJvmIdle.newSuite(suiteName);
-        }
-        
-        foo = null;
+      public void onThrowable(Throwable t) {
+        hadErrors.set(true);
+        t.printStackTrace();
       }
-    });
+    }
 
-    // stress.
-    ExecutorService executor = Executors.newCachedThreadPool();
-    final List<Callable<Void>> forkedJvms = new ArrayList<>();
-    for (int i = 0; i < randomIntBetween(1, 10); i++) {
-      forkedJvms.add(new Callable<Void>() {
+    class SuiteListener {
+      @Subscribe
+      public void onSuiteStarted(String e) {
+        ForkedJvmIdle forkedJvm = idle.pollFirst();
+        sleep(randomIntBetween(1, 10));
+        forkedJvm.newSuite(e);
+      }
+    }
+    
+    class RestartOnIdle {
+      @Subscribe
+      public void onIdle(ForkedJvmIdle e) {
+        sleep(randomIntBetween(1, 10));
+        idle.addLast(e);
+      }
+    }
+
+    List<Future<Void>> futures = new ArrayList<>();
+    aggregatedBus.register(new ExceptionListener());
+    aggregatedBus.register(new SuiteListener());
+    aggregatedBus.register(new RestartOnIdle());
+    for (final String suite : foo) {
+      Callable<Void> c = new Callable<Void>() {
         @Override
         public Void call() throws Exception {
-          aggregatedBus.post(new ForkedJvmIdle());
+          aggregatedBus.post(suite);
+          aggregatedBus.post(idle.pollFirst());
           return null;
         }
-      });
+      };
+      futures.add(executor.submit(c));
     }
-    for (Future<Void> f : executor.invokeAll(forkedJvms)) {
+
+    for (Future<Void> f : futures) {
       f.get();
     }
-    executor.shutdown();
     
     assertFalse(hadErrors.get());
   }

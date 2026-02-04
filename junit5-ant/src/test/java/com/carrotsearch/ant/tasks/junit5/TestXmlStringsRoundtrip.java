@@ -9,7 +9,8 @@ import java.util.Random;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.simpleframework.xml.Attribute;
 import org.simpleframework.xml.Element;
 import org.simpleframework.xml.Root;
@@ -18,9 +19,11 @@ import org.simpleframework.xml.transform.RegistryMatcher;
 import org.xml.sax.SAXParseException;
 
 import com.carrotsearch.ant.tasks.junit5.listeners.antxml.XmlStringTransformerAccess;
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
+@ExtendWith(RandomizedExtension.class)
 public class TestXmlStringsRoundtrip extends RandomizedTest {
   @Test
   @Repeat(iterations = 100)

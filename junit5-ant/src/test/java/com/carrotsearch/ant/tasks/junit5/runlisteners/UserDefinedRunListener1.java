@@ -1,45 +1,44 @@
 package com.carrotsearch.ant.tasks.junit5.runlisteners;
 
-import org.junit.runner.Description;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
-import org.junit.runner.notification.RunListener;
+import org.junit.platform.engine.TestExecutionResult;
+import org.junit.platform.launcher.TestExecutionListener;
+import org.junit.platform.launcher.TestIdentifier;
+import org.junit.platform.launcher.TestPlan;
 
-public class UserDefinedRunListener1 extends RunListener {
+public class UserDefinedRunListener1 implements TestExecutionListener {
 
     @Override
-    public void testRunStarted(Description description) throws Exception {
-        System.out.print("UserDefinedRunListener1.testRunStarted()");
+    public void testPlanExecutionStarted(TestPlan testPlan) {
+        System.out.print("UserDefinedRunListener1.testPlanExecutionStarted()");
     }
 
     @Override
-    public void testRunFinished(Result result) throws Exception {
-        System.out.print("UserDefinedRunListener1.testRunFinished()");
+    public void testPlanExecutionFinished(TestPlan testPlan) {
+        System.out.print("UserDefinedRunListener1.testPlanExecutionFinished()");
     }
 
     @Override
-    public void testStarted(Description description) throws Exception {
-        System.out.print("UserDefinedRunListener1.testStarted()");
+    public void executionStarted(TestIdentifier testIdentifier) {
+        if (!testIdentifier.isContainer()) {
+            System.out.print("UserDefinedRunListener1.executionStarted()");
+        }
     }
 
     @Override
-    public void testFinished(Description description) throws Exception {
-        System.out.print("UserDefinedRunListener1.testFinished()");
+    public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult result) {
+        if (!testIdentifier.isContainer()) {
+            System.out.print("UserDefinedRunListener1.executionFinished()");
+            if (result.getStatus() == TestExecutionResult.Status.FAILED) {
+                System.out.print("UserDefinedRunListener1.testFailure()");
+            } else if (result.getStatus() == TestExecutionResult.Status.ABORTED) {
+                System.out.print("UserDefinedRunListener1.testAssumptionFailure()");
+            }
+        }
     }
 
     @Override
-    public void testFailure(Failure failure) throws Exception {
-        System.out.print("UserDefinedRunListener1.testFailure()");
-    }
-
-    @Override
-    public void testAssumptionFailure(Failure failure) {
-        System.out.print("UserDefinedRunListener1.testAssumptionFailure()");
-    }
-
-    @Override
-    public void testIgnored(Description description) throws Exception {
-        System.out.print("UserDefinedRunListener1.testIgnored()");
+    public void executionSkipped(TestIdentifier testIdentifier, String reason) {
+        System.out.print("UserDefinedRunListener1.executionSkipped()");
     }
 
 }

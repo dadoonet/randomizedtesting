@@ -7,38 +7,37 @@ import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Locale;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.junit.runner.notification.Failure;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonReader;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonWriter;
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(RandomizedExtension.class)
 public class TestRemoteEventSerialization extends RandomizedTest {
-  @RunWith(RandomizedRunner.class)
   @Nightly
   public static class Clazz1 {}
   public static class Clazz2 {}
 
-  private Description description;
+  private TestDescriptionMirror description;
   private long start;
   private long end;
-  private Failure failure;
+  private Throwable thrownException;
 
-  @Before
+  @BeforeEach
   public void setup() {
     Class<?> suiteClass = randomFrom(new Class<?> [] {
       Clazz1.class,
       Clazz2.class
     });
-    description = Description.createSuiteDescription(suiteClass);
+    description = TestDescriptionMirror.createSuiteDescription(suiteClass.getName());
     
     Calendar c = Calendar.getInstance(Locale.ROOT);
     c.set(2015, 10, 20, 0, 0, 0);
@@ -46,14 +45,11 @@ public class TestRemoteEventSerialization extends RandomizedTest {
     end = start + randomIntBetween(0, 1000);
     
     String MARKER = "<exception-marker>";
-    Throwable thrownException;
     try {
       throw new RuntimeException(MARKER);
     } catch (Throwable t) {
       thrownException = t;
     }
-
-    failure = new Failure(description, thrownException);    
   }
 
   @Test
@@ -91,7 +87,7 @@ public class TestRemoteEventSerialization extends RandomizedTest {
   
   @Test
   public void eventSuiteFailure() throws IOException {
-    checkRoundtrip(new SuiteFailureEvent(failure));
+    checkRoundtrip(new SuiteFailureEvent(description, thrownException));
   }
 
   @Test
@@ -106,12 +102,12 @@ public class TestRemoteEventSerialization extends RandomizedTest {
 
   @Test
   public void eventTestFailureEvent() throws IOException {
-    checkRoundtrip(new TestFailureEvent(failure));
+    checkRoundtrip(new TestFailureEvent(description, thrownException));
   }
 
   @Test
   public void eventTestIgnoredAssumptionEvent() throws IOException {
-    checkRoundtrip(new TestIgnoredAssumptionEvent(failure));
+    checkRoundtrip(new TestIgnoredAssumptionEvent(description, thrownException));
   }
 
   @Test

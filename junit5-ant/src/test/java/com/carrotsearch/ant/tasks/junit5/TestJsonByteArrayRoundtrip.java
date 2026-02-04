@@ -4,16 +4,20 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.carrotsearch.ant.tasks.junit5.events.AppendStdErrEvent;
 import com.carrotsearch.ant.tasks.junit5.events.Deserializer;
 import com.carrotsearch.ant.tasks.junit5.events.IEvent;
 import com.carrotsearch.ant.tasks.junit5.events.Serializer;
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith(RandomizedExtension.class)
 public class TestJsonByteArrayRoundtrip extends RandomizedTest {
   @Test
   @Repeat(iterations = 100)
@@ -41,13 +45,13 @@ public class TestJsonByteArrayRoundtrip extends RandomizedTest {
         Thread.currentThread().getContextClassLoader());
     IEvent deserialize = deserializer.deserialize();
     
-    Assert.assertTrue(deserialize instanceof AppendStdErrEvent);
+    assertTrue(deserialize instanceof AppendStdErrEvent);
     AppendStdErrEvent e = ((AppendStdErrEvent) deserialize);
     baos.reset();
     e.copyTo(baos);
-    Assert.assertTrue(
+    assertTrue(
+        Arrays.equals(bytes, baos.toByteArray()),
         "Exp: " + Arrays.toString(bytes) + "\n" +
-        "was: " + Arrays.toString(baos.toByteArray()),
-        Arrays.equals(bytes, baos.toByteArray()));
+        "was: " + Arrays.toString(baos.toByteArray()));
   }
 }
