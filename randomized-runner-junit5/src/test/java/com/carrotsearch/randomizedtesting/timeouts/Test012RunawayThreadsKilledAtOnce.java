@@ -3,16 +3,16 @@ package com.carrotsearch.randomizedtesting.timeouts;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
 
-@RunWith(RandomizedRunner.class)
+import static org.junit.jupiter.api.Assertions.*;
+
 public class Test012RunawayThreadsKilledAtOnce extends WithNestedTestClass {
-  @RunWith(RandomizedRunner.class)
+  @ExtendWith(RandomizedExtension.class)
   public static class NestedClass {
     @Test
     public void lotsOfStubbornThreads() throws Throwable {
@@ -47,8 +47,8 @@ public class Test012RunawayThreadsKilledAtOnce extends WithNestedTestClass {
     FullResult result = runTests(NestedClass.class);
     long end = System.nanoTime();
 
-    Assert.assertEquals(1, result.getFailureCount());
+    assertEquals(1, result.getFailureCount());
     long msec = TimeUnit.NANOSECONDS.toMillis(end - start);
-    Assert.assertTrue(msec + " msec?", msec < 1000 * 10);
+    assertTrue(msec < 1000 * 10, msec + " msec?");
   }
 }
