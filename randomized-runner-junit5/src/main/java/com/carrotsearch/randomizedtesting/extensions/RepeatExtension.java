@@ -3,6 +3,7 @@ package com.carrotsearch.randomizedtesting.extensions;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -82,7 +83,7 @@ public class RepeatExtension implements TestTemplateInvocationContextProvider {
     
     @Override
     public String getDisplayName(int invocationIndex) {
-      return String.format("repetition %d of %d", currentIteration, totalIterations);
+      return String.format(Locale.ROOT, "repetition %d of %d", currentIteration, totalIterations);
     }
   }
 }

@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -118,9 +119,9 @@ public class SeedsExtension implements TestTemplateInvocationContextProvider {
     public String getDisplayName(int invocationIndex) {
       String seedValue = seed.value();
       if (isRandomSeed(seedValue)) {
-        return String.format("[%d/%d] seed=random", index, total);
+        return String.format(Locale.ROOT, "[%d/%d] seed=random", index, total);
       } else {
-        return String.format("[%d/%d] seed=%s", index, total, seedValue);
+        return String.format(Locale.ROOT, "[%d/%d] seed=%s", index, total, seedValue);
       }
     }
     
