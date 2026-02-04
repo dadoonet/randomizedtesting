@@ -1,6 +1,5 @@
 package com.carrotsearch.randomizedtesting.listeners;
 
-import org.junit.platform.launcher.TestIdentifier;
 import org.opentest4j.TestAbortedException;
 
 import com.carrotsearch.randomizedtesting.*;
@@ -14,14 +13,14 @@ public class ReproduceInfoPrinter implements RandomizedTestListener {
   
   @Override
   @SuppressForbidden("Legitimate use of syserr.")
-  public void testFailed(TestIdentifier testIdentifier, Throwable cause) {
+  public void testFailed(TestInfo testInfo, Throwable cause) {
     // Ignore assumptions.
     if (cause instanceof TestAbortedException) {
       return;
     }
 
     final StringBuilder b = new StringBuilder();
-    b.append("FAILURE  : ").append(testIdentifier.getDisplayName()).append("\n");
+    b.append("FAILURE  : ").append(testInfo.getDisplayName()).append("\n");
     b.append("Message  : ").append(cause != null ? cause.getMessage() : "unknown").append("\n");
     b.append("Reproduce: ");
     
