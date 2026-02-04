@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.opentest4j.TestAbortedException;
 
 import com.carrotsearch.randomizedtesting.annotations.*;
+import com.carrotsearch.randomizedtesting.extensions.SeedsExtension;
 import com.carrotsearch.randomizedtesting.extensions.TestGroupCondition;
 import com.carrotsearch.randomizedtesting.extensions.TimeoutExtension;
 
@@ -247,8 +248,8 @@ public class RandomizedExtension implements
     if (randomizedContext != null && runnerRandomness != null) {
       Method testMethod = context.getRequiredTestMethod();
 
-      // Determine test seed - use the same RandomSupplier as the runner
-      long testSeed = determineTestSeed(testMethod, runnerRandomness);
+      // Determine test seed - check for @Seeds annotation first
+      long testSeed = determineTestSeed(testMethod, runnerRandomness, context);
       Randomness testRandomness = new Randomness(testSeed, runnerRandomness.getRandomSupplier());
       store.put(KEY_RANDOMNESS, testRandomness);
 
@@ -505,7 +506,18 @@ public class RandomizedExtension implements
   /**
    * Determine the seed for a test method.
    */
-  private long determineTestSeed(Method method, Randomness runnerRandomness) {
+  private long determineTestSeed(Method method, Randomness runnerRandomness, ExtensionContext context) {
+    // Check for seed from @Seeds annotation (via SeedsExtension)
+    Seed seedFromSeeds = SeedsExtension.getCurrentSeed(context);
+    if (seedFromSeeds != null) {
+      String seedValue = seedFromSeeds.value();
+      if (!SeedsExtension.isRandomSeed(seedValue)) {
+        return SeedsExtension.parseSeed(seedValue, runnerRandomness.getSeed());
+      }
+      // For "random" seed in @Seeds, generate a unique seed for this invocation
+      return runnerRandomness.getSeed() ^ MurmurHash3.hash(System.nanoTime());
+    }
+    
     // Check for method-level @Seed annotation
     Seed seed = method.getAnnotation(Seed.class);
     if (seed != null && !seed.value().equals("random")) {
