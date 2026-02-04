@@ -437,17 +437,20 @@ public class RandomizedExtension implements
     int iterations = (iterationsObj != null) ? iterationsObj : 1;
     
     // Check for method timeout - also consider remaining suite time
-    int timeout = getMethodTimeout(invocationContext.getExecutable(), extensionContext);
+    int methodTimeout = getMethodTimeout(invocationContext.getExecutable(), extensionContext);
     int remainingSuiteTime = getRemainingsuiteTime(extensionContext);
-    if (remainingSuiteTime > 0) {
-      // Use the smaller of method timeout and remaining suite time
-      if (timeout <= 0 || remainingSuiteTime < timeout) {
-        timeout = remainingSuiteTime;
-      }
+    int timeout;
+    boolean isSuiteTimeout = false;
+    
+    if (remainingSuiteTime > 0 && (methodTimeout <= 0 || remainingSuiteTime < methodTimeout)) {
+      timeout = remainingSuiteTime;
+      isSuiteTimeout = true;
+    } else {
+      timeout = methodTimeout;
     }
     
     // Execute first iteration (already set up by beforeEach)
-    executeMethodWithTimeout(invocation, timeout);
+    executeMethodWithTimeout(invocation, timeout, isSuiteTimeout);
     
     // Execute additional iterations if SYSPROP_ITERATIONS > 1
     if (iterations > 1) {
@@ -483,17 +486,152 @@ public class RandomizedExtension implements
             return null;
           }
         };
-        executeMethodWithTimeout(iterationInvocation, timeout);
+        executeMethodWithTimeout(iterationInvocation, timeout, isSuiteTimeout);
       }
     }
   }
   
-  private void executeMethodWithTimeout(Invocation<Void> invocation, int timeout) throws Throwable {
+  private void executeMethodWithTimeout(Invocation<Void> invocation, int timeout, boolean isSuiteTimeout) throws Throwable {
     if (timeout <= 0) {
       invocation.proceed();
     } else {
-      executeWithTimeout(invocation, timeout, "Test timeout exceeded");
+      String message = isSuiteTimeout ? "Suite timeout exceeded" : "Test timeout exceeded";
+      executeWithTimeout(invocation, timeout, message);
     }
+  }
+  
+  @Override
+  public void interceptBeforeAllMethod(Invocation<Void> invocation,
+                                       ReflectiveInvocationContext<Method> invocationContext,
+                                       ExtensionContext extensionContext) throws Throwable {
+    TimeoutInfo timeoutInfo = getLifecycleTimeout(extensionContext, true);
+    if (timeoutInfo.timeout > 0) {
+      executeWithTimeout(invocation, timeoutInfo.timeout, "Suite timeout exceeded");
+    } else {
+      invocation.proceed();
+    }
+  }
+  
+  @Override
+  public void interceptAfterAllMethod(Invocation<Void> invocation,
+                                      ReflectiveInvocationContext<Method> invocationContext,
+                                      ExtensionContext extensionContext) throws Throwable {
+    TimeoutInfo timeoutInfo = getLifecycleTimeout(extensionContext, true);
+    if (timeoutInfo.timeout > 0) {
+      executeWithTimeout(invocation, timeoutInfo.timeout, "Suite timeout exceeded");
+    } else {
+      invocation.proceed();
+    }
+  }
+  
+  @Override
+  public void interceptBeforeEachMethod(Invocation<Void> invocation,
+                                        ReflectiveInvocationContext<Method> invocationContext,
+                                        ExtensionContext extensionContext) throws Throwable {
+    TimeoutInfo timeoutInfo = getLifecycleTimeout(extensionContext, false);
+    if (timeoutInfo.timeout > 0) {
+      String message = timeoutInfo.isSuiteTimeout ? "Suite timeout exceeded" : "Test timeout exceeded";
+      executeWithTimeout(invocation, timeoutInfo.timeout, message);
+    } else {
+      invocation.proceed();
+    }
+  }
+  
+  @Override
+  public void interceptAfterEachMethod(Invocation<Void> invocation,
+                                       ReflectiveInvocationContext<Method> invocationContext,
+                                       ExtensionContext extensionContext) throws Throwable {
+    TimeoutInfo timeoutInfo = getLifecycleTimeout(extensionContext, false);
+    if (timeoutInfo.timeout > 0) {
+      String message = timeoutInfo.isSuiteTimeout ? "Suite timeout exceeded" : "Test timeout exceeded";
+      executeWithTimeout(invocation, timeoutInfo.timeout, message);
+    } else {
+      invocation.proceed();
+    }
+  }
+  
+  /**
+   * Simple holder for timeout value and whether it's from suite timeout.
+   */
+  private static class TimeoutInfo {
+    final int timeout;
+    final boolean isSuiteTimeout;
+    
+    TimeoutInfo(int timeout, boolean isSuiteTimeout) {
+      this.timeout = timeout;
+      this.isSuiteTimeout = isSuiteTimeout;
+    }
+  }
+  
+  /**
+   * Get timeout for lifecycle methods.
+   * For class-level methods (@BeforeAll, @AfterAll), only suite timeout applies.
+   * For instance-level methods (@BeforeEach, @AfterEach), use the smaller of 
+   * suite timeout and method timeout.
+   */
+  private TimeoutInfo getLifecycleTimeout(ExtensionContext context, boolean classLevel) {
+    int suiteRemaining = getRemainingsuiteTime(context);
+    
+    if (classLevel) {
+      // For @BeforeAll/@AfterAll, only suite timeout applies
+      return new TimeoutInfo(suiteRemaining, true);
+    }
+    
+    // For @BeforeEach/@AfterEach, consider both suite and method timeout
+    int methodTimeout = getMethodTimeoutFromClass(context);
+    
+    if (suiteRemaining > 0 && methodTimeout > 0) {
+      if (suiteRemaining <= methodTimeout) {
+        return new TimeoutInfo(suiteRemaining, true);
+      } else {
+        return new TimeoutInfo(methodTimeout, false);
+      }
+    } else if (suiteRemaining > 0) {
+      return new TimeoutInfo(suiteRemaining, true);
+    } else {
+      return new TimeoutInfo(methodTimeout, false);
+    }
+  }
+  
+  /**
+   * Get method timeout from the test class annotation (for lifecycle methods).
+   */
+  private int getMethodTimeoutFromClass(ExtensionContext context) {
+    // Parse system property first
+    String sysProp = System.getProperty(SysGlobals.SYSPROP_TIMEOUT());
+    boolean forceOverride = false;
+    int sysPropTimeout = -1;
+    
+    if (sysProp != null && !sysProp.isEmpty()) {
+      forceOverride = sysProp.endsWith("!");
+      String timeoutValue = forceOverride ? sysProp.substring(0, sysProp.length() - 1) : sysProp;
+      try {
+        sysPropTimeout = Integer.parseInt(timeoutValue);
+      } catch (NumberFormatException e) {
+        // ignore
+      }
+    }
+    
+    // If force override, return system property value (0 means disabled)
+    if (forceOverride && sysPropTimeout >= 0) {
+      return sysPropTimeout;
+    }
+    
+    // Check class-level @Timeout annotation
+    Class<?> testClass = context.getTestClass().orElse(null);
+    if (testClass != null) {
+      List<Timeout> timeouts = getAnnotationsFromClassHierarchy(testClass, Timeout.class);
+      if (!timeouts.isEmpty()) {
+        return timeouts.get(0).millis();
+      }
+    }
+    
+    // Use system property if set (non-forced)
+    if (sysPropTimeout > 0) {
+      return sysPropTimeout;
+    }
+    
+    return 0;
   }
   
   /**
