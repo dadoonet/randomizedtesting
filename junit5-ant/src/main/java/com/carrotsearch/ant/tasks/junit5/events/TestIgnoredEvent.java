@@ -2,8 +2,7 @@ package com.carrotsearch.ant.tasks.junit5.events;
 
 import java.io.IOException;
 
-import org.junit.runner.Description;
-
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonReader;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonWriter;
 
@@ -15,7 +14,7 @@ public class TestIgnoredEvent extends AbstractEventWithDescription {
     super(EventType.TEST_IGNORED);
   }
   
-  public TestIgnoredEvent(Description description, String cause) {
+  public TestIgnoredEvent(TestDescriptionMirror description, String cause) {
     this();
     setDescription(description);
 

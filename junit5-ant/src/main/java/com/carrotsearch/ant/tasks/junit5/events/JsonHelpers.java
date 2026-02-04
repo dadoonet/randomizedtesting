@@ -1,20 +1,16 @@
 package com.carrotsearch.ant.tasks.junit5.events;
 
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
-import org.junit.runner.Description;
-
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonReader;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonToken;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonWriter;
-import com.google.common.base.Objects;
 
 public final class JsonHelpers {
-  public static void writeDescription(JsonWriter writer, Description e) throws IOException {
+  public static void writeDescription(JsonWriter writer, TestDescriptionMirror e) throws IOException {
     String key = createId(e);
     if (writer.inContext(key)) {
       writer.value(key);
@@ -27,7 +23,7 @@ public final class JsonHelpers {
       writer.name("className").value(e.getClassName());
   
       writer.name("children").beginArray();
-      for (Description child : e.getChildren()) {
+      for (TestDescriptionMirror child : e.getChildren()) {
         writeDescription(writer, child);
       }
       writer.endArray();
@@ -35,11 +31,11 @@ public final class JsonHelpers {
     }
   }
 
-  protected static Description readDescription(JsonReader reader) throws IOException {
-    final Description description;
+  protected static TestDescriptionMirror readDescription(JsonReader reader) throws IOException {
+    final TestDescriptionMirror description;
     if (reader.peek() == JsonToken.STRING) {
       String key = reader.nextString();
-      description = (Description) reader.lookupInContext(key);
+      description = (TestDescriptionMirror) reader.lookupInContext(key);
       if (description == null) {
         throw new IOException("Missing reference to: " + key);
       }
@@ -50,28 +46,14 @@ public final class JsonHelpers {
       String methodName = AbstractEvent.readStringOrNullProperty(reader, "methodName");
       String className = AbstractEvent.readStringOrNullProperty(reader, "className");
     
-      List<Description> children = new ArrayList<>();
+      List<TestDescriptionMirror> children = new ArrayList<>();
       AbstractEvent.expectProperty(reader, "children").beginArray();
       while (reader.peek() != JsonToken.END_ARRAY) {
         children.add(readDescription(reader));
       }
       reader.endArray();
 
-      description = Description.createSuiteDescription(displayName, new Annotation [] {});
-
-      for (Description child : children) {
-        description.addChild(child);
-      }
-      
-      if (!Objects.equal(description.getMethodName(), methodName)) {
-        throw new IOException(String.format(Locale.ROOT,
-            "Insane, methodName does not match: %s, %s", description.getMethodName(), methodName));
-      }
-    
-      if (!Objects.equal(description.getClassName(), className)) {
-        throw new IOException(String.format(Locale.ROOT,
-            "Insane, className does not match: %s, %s", description.getClassName(), className));
-      }      
+      description = new TestDescriptionMirror(displayName, className, methodName, key, children);
       
       reader.registerInContext(key, description);
       reader.endObject();
@@ -80,7 +62,7 @@ public final class JsonHelpers {
     return description;
   }
 
-  private static String createId(Description description) {
+  private static String createId(TestDescriptionMirror description) {
     return "ID#" + description.getDisplayName();
   }
 }

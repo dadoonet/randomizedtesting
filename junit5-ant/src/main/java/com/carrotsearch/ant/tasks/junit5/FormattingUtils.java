@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import org.junit.runner.Description;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 
 /**
  * Formatting utilities for consistency across code.
@@ -40,11 +40,11 @@ public final class FormattingUtils {
     return String.format(Locale.ROOT, "%4." + precision + "fs", timeMillis / 1000.0);
   }
 
-  public static String formatDescription(Description description) {
+  public static String formatDescription(TestDescriptionMirror description) {
     return formatDescription(description, false);
   }
 
-  public static String formatDescription(Description description, boolean fullNames) {
+  public static String formatDescription(TestDescriptionMirror description, boolean fullNames) {
     StringBuilder buffer = new StringBuilder();
     String className = description.getClassName();
     if (className != null) {

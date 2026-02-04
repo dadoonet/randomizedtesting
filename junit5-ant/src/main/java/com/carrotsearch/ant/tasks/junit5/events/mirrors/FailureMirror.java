@@ -1,11 +1,14 @@
 package com.carrotsearch.ant.tasks.junit5.events.mirrors;
 
-import org.junit.internal.AssumptionViolatedException;
-import org.junit.runner.Description;
-import org.junit.runner.notification.Failure;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+import org.opentest4j.TestAbortedException;
 
 /**
- * A type-safe mirror of {@link Failure}.
+ * A serializable mirror of test failure information.
+ * This class provides a framework-independent representation of test failures
+ * that can be used with both JUnit 4 and JUnit 5.
  */
 public class FailureMirror {
   private String message;
@@ -13,14 +16,14 @@ public class FailureMirror {
   private String throwableString;
   private String throwableClass;
 
-  /** Was [@link Failure} an instance of an {@link AssertionError}? */
+  /** Was the failure an instance of an {@link AssertionError}? */
   private boolean assertionViolation;
   private boolean assumptionViolation;
 
-  /** The test {@link Description} that caused this failure. */
-  private Description description;
+  /** The test description that caused this failure. */
+  private TestDescriptionMirror description;
 
-  public FailureMirror(Description description,
+  public FailureMirror(TestDescriptionMirror description,
                        String message, 
                        String trace,
                        String throwableString,
@@ -36,16 +39,35 @@ public class FailureMirror {
     this.description = description;
   }
 
-  public FailureMirror(Failure failure) {
-    this.message = failure.getMessage();
-    this.description = failure.getDescription();
-    this.trace = failure.getTrace();
-
-    final Throwable cause = failure.getException();
+  /**
+   * Creates a FailureMirror from a description and throwable.
+   */
+  public FailureMirror(TestDescriptionMirror description, Throwable cause) {
+    this.description = description;
+    this.message = cause.getMessage();
+    this.trace = getStackTrace(cause);
     this.assertionViolation = cause instanceof AssertionError;
-    this.assumptionViolation = cause instanceof AssumptionViolatedException;
+    this.assumptionViolation = cause instanceof TestAbortedException 
+        || isJUnit4AssumptionViolation(cause);
     this.throwableString = cause.toString();
     this.throwableClass = cause.getClass().getName();
+  }
+
+  private static String getStackTrace(Throwable t) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    t.printStackTrace(pw);
+    return sw.toString();
+  }
+
+  /**
+   * Check if the throwable is a JUnit 4 AssumptionViolatedException.
+   * We check by class name to avoid a compile-time dependency on JUnit 4.
+   */
+  private static boolean isJUnit4AssumptionViolation(Throwable cause) {
+    String className = cause.getClass().getName();
+    return className.equals("org.junit.internal.AssumptionViolatedException")
+        || className.equals("org.junit.AssumptionViolatedException");
   }
 
   public String getMessage() {
@@ -56,7 +78,7 @@ public class FailureMirror {
     return throwableString;
   }
 
-  public Description getDescription() {
+  public TestDescriptionMirror getDescription() {
     return description;
   }
 

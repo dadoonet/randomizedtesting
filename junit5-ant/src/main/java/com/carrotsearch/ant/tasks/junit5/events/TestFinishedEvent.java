@@ -2,8 +2,7 @@ package com.carrotsearch.ant.tasks.junit5.events;
 
 import java.io.IOException;
 
-import org.junit.runner.Description;
-
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonReader;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonWriter;
 
@@ -16,7 +15,7 @@ public class TestFinishedEvent extends AbstractEventWithDescription {
     super(EventType.TEST_FINISHED);
   }
 
-  public TestFinishedEvent(Description description, long timeMillis, long startTimestamp) {
+  public TestFinishedEvent(TestDescriptionMirror description, long timeMillis, long startTimestamp) {
     this();
     this.executionTime = timeMillis;
     this.startTimestamp = startTimestamp;

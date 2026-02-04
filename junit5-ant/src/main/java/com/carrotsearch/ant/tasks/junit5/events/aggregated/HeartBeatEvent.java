@@ -1,8 +1,7 @@
 package com.carrotsearch.ant.tasks.junit5.events.aggregated;
 
-import org.junit.runner.Description;
-
 import com.carrotsearch.ant.tasks.junit5.ForkedJvmInfo;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 
 /**
  * High level heartbeat event issued to report listeners when a forked JVM
@@ -12,18 +11,18 @@ import com.carrotsearch.ant.tasks.junit5.ForkedJvmInfo;
  */
 public final class HeartBeatEvent {
   private final ForkedJvmInfo forkedJvmInfo;
-  private final Description description;
+  private final TestDescriptionMirror description;
   private final long lastActivity;
   private final long currentTime;
 
-  public HeartBeatEvent(ForkedJvmInfo forkedJvmInfo, Description description, long lastActivity, long currentTime) {
+  public HeartBeatEvent(ForkedJvmInfo forkedJvmInfo, TestDescriptionMirror description, long lastActivity, long currentTime) {
     this.forkedJvmInfo = forkedJvmInfo;
     this.description = description;
     this.lastActivity = lastActivity;
     this.currentTime = currentTime;
   }
   
-  public Description getDescription() {
+  public TestDescriptionMirror getDescription() {
     return description;
   }
   

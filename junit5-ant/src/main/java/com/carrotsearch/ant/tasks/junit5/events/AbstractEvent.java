@@ -3,8 +3,7 @@ package com.carrotsearch.ant.tasks.junit5.events;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import org.junit.runner.Description;
-
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonReader;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonToken;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonWriter;
@@ -115,7 +114,7 @@ abstract class AbstractEvent implements RemoteEvent {
     return bb.toString();
   }
   
-  public static void writeDescription(JsonWriter writer, Description e) throws IOException {
+  public static void writeDescription(JsonWriter writer, TestDescriptionMirror e) throws IOException {
     JsonHelpers.writeDescription(writer, e);
   }  
 }

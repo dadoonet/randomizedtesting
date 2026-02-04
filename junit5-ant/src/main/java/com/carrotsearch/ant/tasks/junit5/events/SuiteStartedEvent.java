@@ -2,14 +2,13 @@ package com.carrotsearch.ant.tasks.junit5.events;
 
 import java.io.IOException;
 
-import org.junit.runner.Description;
-
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonReader;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonWriter;
 
 
 /**
- * Serialized failure.
+ * Suite started event.
  */
 public class SuiteStartedEvent extends AbstractEventWithDescription {
   private long startTimestamp;
@@ -18,7 +17,7 @@ public class SuiteStartedEvent extends AbstractEventWithDescription {
     super(EventType.SUITE_STARTED);
   }
 
-  public SuiteStartedEvent(Description description, long startTimestamp) {
+  public SuiteStartedEvent(TestDescriptionMirror description, long startTimestamp) {
     this();
     setDescription(description);
     this.startTimestamp = startTimestamp;

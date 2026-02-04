@@ -4,19 +4,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.runner.Description;
-
 import com.carrotsearch.ant.tasks.junit5.ForkedJvmInfo;
 import com.carrotsearch.ant.tasks.junit5.events.IEvent;
 import com.carrotsearch.ant.tasks.junit5.events.TestFinishedEvent;
 import com.carrotsearch.ant.tasks.junit5.events.mirrors.FailureMirror;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 
 /**
  * A single test's execution information.
  */
 public class AggregatedTestResultEvent implements AggregatedResultEvent {
-  private final Description suite;
-  private final Description description;
+  private final TestDescriptionMirror suite;
+  private final TestDescriptionMirror description;
   private final ForkedJvmInfo forkedJvmInfo;
 
   private TestStatus status = TestStatus.OK;
@@ -34,14 +33,14 @@ public class AggregatedTestResultEvent implements AggregatedResultEvent {
   /** Associated {@link TestFinishedEvent}. */
   private TestFinishedEvent testFinishedEvent;
 
-  public AggregatedTestResultEvent(ForkedJvmInfo forkedJvmInfo, Description suiteDescription, Description description) {
+  public AggregatedTestResultEvent(ForkedJvmInfo forkedJvmInfo, TestDescriptionMirror suiteDescription, TestDescriptionMirror description) {
     this.description = description;
     this.suite = suiteDescription;
     this.forkedJvmInfo = forkedJvmInfo;
   }
 
   @Override
-  public Description getDescription() {
+  public TestDescriptionMirror getDescription() {
     return description;
   }
   
@@ -52,7 +51,7 @@ public class AggregatedTestResultEvent implements AggregatedResultEvent {
            status == TestStatus.IGNORED_ASSUMPTION;
   }
 
-  public Description getSuiteDescription() {
+  public TestDescriptionMirror getSuiteDescription() {
     return suite;
   }
 

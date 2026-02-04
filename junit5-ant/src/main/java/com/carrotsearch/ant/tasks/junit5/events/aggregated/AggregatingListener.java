@@ -4,18 +4,16 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.runner.Description;
-import org.junit.runner.JUnitCore;
-
 import com.carrotsearch.ant.tasks.junit5.ForkedJvmInfo;
 import com.carrotsearch.ant.tasks.junit5.events.*;
 import com.carrotsearch.ant.tasks.junit5.events.mirrors.FailureMirror;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 
 /**
- * Aggregates atomic events from {@link JUnitCore} to higher-level events that
+ * Aggregates atomic events from JUnit Platform to higher-level events that
  * contain a full summary of a given test's execution. Simplifies reporting
  * logic.
  */
@@ -24,7 +22,7 @@ public class AggregatingListener {
   private ForkedJvmInfo forkedJvmInfo;
 
   private AggregatedSuiteStartedEvent startEvent;
-  private Description lastSuite;
+  private TestDescriptionMirror lastSuite;
   private List<FailureMirror> suiteFailures;
 
   private ArrayDeque<AggregatedTestResultEvent> tests;
@@ -66,7 +64,7 @@ public class AggregatingListener {
    */
   @Subscribe
   public void slowHeartBeat(LowLevelHeartBeatEvent e) {
-    Description current = null;
+    TestDescriptionMirror current = null;
     if (tests != null && !tests.isEmpty()) {
       current = tests.peek().getDescription();
     } else {
@@ -103,9 +101,9 @@ public class AggregatingListener {
 
   @Subscribe
   public void receiveTestIgnored(TestIgnoredEvent e) {
-    Description description = e.getDescription();
+    TestDescriptionMirror description = e.getDescription();
     if (description.getMethodName() == null) {
-      // This is how JUnit signals ignored suites: by passing a Description that is a 
+      // This is how JUnit signals ignored suites: by passing a description that is a 
       // suite but has no children (so isSuite() returns false...).
       return;
     }
@@ -123,7 +121,7 @@ public class AggregatingListener {
 
   @Subscribe
   public void receiveTestAssumptionIgnored(TestIgnoredAssumptionEvent e) {
-    Description description = e.getDescription();
+    TestDescriptionMirror description = e.getDescription();
     if (description.getMethodName() == null) {
       // Don't record suite-level assumptions. They result in ignored
       // tests that RandomizedRunner reports and JUnit runner ignores
@@ -137,7 +135,7 @@ public class AggregatingListener {
 
   @Subscribe
   public void receiveTestFailure(TestFailureEvent e) {
-    Description description = e.getDescription();
+    TestDescriptionMirror description = e.getDescription();
     if (description.getMethodName() == null) {
       suiteFailures.add(e.getFailure());
       return;

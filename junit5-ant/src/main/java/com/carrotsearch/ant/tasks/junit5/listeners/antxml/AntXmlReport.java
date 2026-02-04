@@ -16,7 +16,6 @@ import java.util.Map;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.filters.TokenFilter;
-import org.junit.runner.Description;
 import org.simpleframework.xml.core.Persister;
 import org.simpleframework.xml.transform.RegistryMatcher;
 
@@ -27,6 +26,7 @@ import com.carrotsearch.ant.tasks.junit5.events.aggregated.AggregatedSuiteResult
 import com.carrotsearch.ant.tasks.junit5.events.aggregated.AggregatedTestResultEvent;
 import com.carrotsearch.ant.tasks.junit5.events.aggregated.TestStatus;
 import com.carrotsearch.ant.tasks.junit5.events.mirrors.FailureMirror;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.ant.tasks.junit5.listeners.AggregatedEventListener;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
@@ -153,7 +153,7 @@ public class AntXmlReport implements AggregatedEventListener {
     // Calculate summaries.
     summaryListener.suiteSummary(e);
 
-    Description suiteDescription = e.getDescription();
+    TestDescriptionMirror suiteDescription = e.getDescription();
     String displayName = suiteDescription.getDisplayName();
     if (displayName.trim().isEmpty()) {
       junit4.log("Could not emit XML report for suite (null description).", 

@@ -11,8 +11,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import org.junit.runner.Description;
-
 import com.carrotsearch.ant.tasks.junit5.ForkedJvmInfo;
 import com.carrotsearch.ant.tasks.junit5.events.EventType;
 import com.carrotsearch.ant.tasks.junit5.events.FailureEvent;
@@ -21,6 +19,7 @@ import com.carrotsearch.ant.tasks.junit5.events.IEvent;
 import com.carrotsearch.ant.tasks.junit5.events.IStreamEvent;
 import com.carrotsearch.ant.tasks.junit5.events.JsonHelpers;
 import com.carrotsearch.ant.tasks.junit5.events.mirrors.FailureMirror;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonWriter;
 import com.carrotsearch.randomizedtesting.WriterOutputStream;
 
@@ -29,7 +28,7 @@ public class AggregatedSuiteResultEvent implements AggregatedResultEvent {
 
   private final long executionTime;
   private final long startTimestamp;
-  private final Description description;
+  private final TestDescriptionMirror description;
 
   private final List<AggregatedTestResultEvent> tests;
   private final List<FailureMirror> suiteFailures;
@@ -40,7 +39,7 @@ public class AggregatedSuiteResultEvent implements AggregatedResultEvent {
   public AggregatedSuiteResultEvent(
       AggregatedSuiteStartedEvent startEvent,
       ForkedJvmInfo id, 
-      Description description, 
+      TestDescriptionMirror description, 
       List<FailureMirror> suiteFailures, 
       List<AggregatedTestResultEvent> tests,
       List<IEvent> eventStream,
@@ -94,7 +93,7 @@ public class AggregatedSuiteResultEvent implements AggregatedResultEvent {
   }
 
   @Override
-  public Description getDescription() {
+  public TestDescriptionMirror getDescription() {
     return description;
   }
 

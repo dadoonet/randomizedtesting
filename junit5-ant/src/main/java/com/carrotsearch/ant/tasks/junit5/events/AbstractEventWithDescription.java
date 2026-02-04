@@ -2,23 +2,22 @@ package com.carrotsearch.ant.tasks.junit5.events;
 
 import java.io.IOException;
 
-import org.junit.runner.Description;
-
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonReader;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonWriter;
 
 abstract class AbstractEventWithDescription extends AbstractEvent implements IDescribable {
-  private Description description;
+  private TestDescriptionMirror description;
 
   public AbstractEventWithDescription(EventType type) {
     super(type);
   }
 
-  public Description getDescription() {
+  public TestDescriptionMirror getDescription() {
     return description;
   }
   
-  protected void setDescription(Description description) {
+  protected void setDescription(TestDescriptionMirror description) {
     if (this.description != null)
       throw new IllegalStateException("Initialize once.");
     this.description = description;

@@ -2,10 +2,8 @@ package com.carrotsearch.ant.tasks.junit5.events;
 
 import java.io.IOException;
 
-import org.junit.runner.Description;
-import org.junit.runner.notification.Failure;
-
 import com.carrotsearch.ant.tasks.junit5.events.mirrors.FailureMirror;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonReader;
 import com.carrotsearch.ant.tasks.junit5.gson.stream.JsonWriter;
 
@@ -19,19 +17,22 @@ public abstract class FailureEvent extends AbstractEvent implements IDescribable
     super(type);
   }
 
-  protected void setFailure(Failure failure) {
+  protected void setFailure(FailureMirror failure) {
     if (this.failure != null) {
       throw new IllegalStateException("Set only once.");
     }
+    this.failure = failure;
+  }
 
-    this.failure = new FailureMirror(failure);
+  protected void setFailure(TestDescriptionMirror description, Throwable cause) {
+    setFailure(new FailureMirror(description, cause));
   }
 
   public FailureMirror getFailure() {
     return failure;
   }
   
-  public Description getDescription() {
+  public TestDescriptionMirror getDescription() {
     return failure.getDescription();
   }
   
@@ -57,7 +58,7 @@ public abstract class FailureEvent extends AbstractEvent implements IDescribable
     reader.beginObject();
 
     expectProperty(reader, "description");
-    Description description = JsonHelpers.readDescription(reader);
+    TestDescriptionMirror description = JsonHelpers.readDescription(reader);
     String message = readStringOrNullProperty(reader, "message");
     String trace = readStringOrNullProperty(reader, "trace");
     String throwableString = readStringOrNullProperty(reader, "throwableString");

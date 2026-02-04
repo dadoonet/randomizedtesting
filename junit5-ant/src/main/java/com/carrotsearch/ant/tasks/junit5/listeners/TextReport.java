@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
-import org.junit.runner.Description;
 
 import com.carrotsearch.ant.tasks.junit5.FormattingUtils;
 import com.carrotsearch.ant.tasks.junit5.JUnit5;

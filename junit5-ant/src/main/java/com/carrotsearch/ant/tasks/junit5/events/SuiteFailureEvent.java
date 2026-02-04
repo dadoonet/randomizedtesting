@@ -1,17 +1,23 @@
 package com.carrotsearch.ant.tasks.junit5.events;
 
-import org.junit.runner.notification.Failure;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.FailureMirror;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 
 /**
- * Serialized failure.
+ * Suite failure event.
  */
 public class SuiteFailureEvent extends FailureEvent {
   protected SuiteFailureEvent() {
     super(EventType.SUITE_FAILURE);
   }
 
-  public SuiteFailureEvent(Failure failure) {
+  public SuiteFailureEvent(FailureMirror failure) {
     this();
     setFailure(failure);
-  } 
+  }
+
+  public SuiteFailureEvent(TestDescriptionMirror description, Throwable cause) {
+    this();
+    setFailure(description, cause);
+  }
 }

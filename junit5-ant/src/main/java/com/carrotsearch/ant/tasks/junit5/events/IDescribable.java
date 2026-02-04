@@ -1,15 +1,13 @@
 package com.carrotsearch.ant.tasks.junit5.events;
 
-import org.junit.runner.Description;
+import com.carrotsearch.ant.tasks.junit5.events.mirrors.TestDescriptionMirror;
 
 /**
- * An event that carries a {@link Description}.
+ * An event that carries a {@link TestDescriptionMirror}.
  */
 public interface IDescribable {
-  /*
-   * TODO: [GH-211] we should just pass over the essential information about
-   * a test, without exposing Class<?>, Description or Annotation instances (which
-   * are problematic to serialize, initialize, etc.)
+  /**
+   * Returns the test description mirror containing essential test information.
    */
-  Description getDescription();
+  TestDescriptionMirror getDescription();
 }
