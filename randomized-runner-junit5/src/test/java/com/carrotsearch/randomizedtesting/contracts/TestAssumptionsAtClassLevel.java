@@ -76,7 +76,12 @@ public class TestAssumptionsAtClassLevel extends WithNestedTestClass {
 
   @Test
   public void checkOrder() {
-    checkTestsOutput(0, 1, 0, 1, SubSub.class);
+    // In JUnit 5, when @BeforeAll fails with assumption:
+    // - run=0: no tests executed
+    // - ignored=0: tests are not individually "skipped", container is aborted
+    // - fail=0: no failures
+    // - assumption=1: container-level assumption failure
+    checkTestsOutput(0, 0, 0, 1, SubSub.class);
 
     List<String> expected = Arrays.asList(
         "beforeClassSuper",

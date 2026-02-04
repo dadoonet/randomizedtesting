@@ -13,7 +13,9 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestRandomPicks extends RandomizedTest {
   @Test
   public void testRandomFromEmptyCollection() {
-    RandomPicks.randomFrom(getRandom(), new HashSet<Object>());
+    assertThrows(IllegalArgumentException.class, () -> {
+      RandomPicks.randomFrom(getRandom(), new HashSet<Object>());
+    });
   }
 
   @Test
@@ -25,11 +27,15 @@ public class TestRandomPicks extends RandomizedTest {
 
   @Test
   public void testRandomFromList() {
-    RandomPicks.randomFrom(getRandom(), new ArrayList<Object>());
+    assertThrows(IllegalArgumentException.class, () -> {
+      RandomPicks.randomFrom(getRandom(), new ArrayList<Object>());
+    });
   }
 
   @Test
   public void testRandomFromArray() {
-    RandomPicks.randomFrom(getRandom(), new Object[] {});
+    assertThrows(IllegalArgumentException.class, () -> {
+      RandomPicks.randomFrom(getRandom(), new Object[] {});
+    });
   }
 }

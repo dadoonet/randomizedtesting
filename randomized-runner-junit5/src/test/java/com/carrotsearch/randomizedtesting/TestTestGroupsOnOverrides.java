@@ -66,6 +66,8 @@ public class TestTestGroupsOnOverrides extends WithNestedTestClass {
   }
 
   public static class Normal extends Super {
+    @Override
+    @Test
     public void method() {
       buf.add("sub:method");
     }

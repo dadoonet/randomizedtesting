@@ -383,12 +383,26 @@ public class WithNestedTestClass {
                 } else if (testExecutionResult.getStatus() == TestExecutionResult.Status.ABORTED) {
                   fullResult.assumptionIgnored.incrementAndGet();
                 }
+              } else if (testIdentifier.isContainer()) {
+                // Container-level failures (e.g., extension failures in @AfterAll)
+                if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
+                  fullResult.failureCount.incrementAndGet();
+                  Optional<Throwable> throwable = testExecutionResult.getThrowable();
+                  fullResult.failures.add(new FailureInfo(testIdentifier, 
+                      throwable.orElse(new RuntimeException("Container failure"))));
+                } else if (testExecutionResult.getStatus() == TestExecutionResult.Status.ABORTED) {
+                  fullResult.assumptionIgnored.incrementAndGet();
+                }
               }
             }
             
             @Override
             public void executionSkipped(TestIdentifier testIdentifier, String reason) {
               if (testIdentifier.isTest()) {
+                fullResult.ignoreCount.incrementAndGet();
+              } else if (testIdentifier.isContainer()) {
+                // Container-level skips (e.g., @Disabled on class)
+                // Count it as ignored since the whole class is skipped
                 fullResult.ignoreCount.incrementAndGet();
               }
             }

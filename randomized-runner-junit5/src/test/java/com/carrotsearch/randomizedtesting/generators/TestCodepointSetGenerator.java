@@ -67,7 +67,9 @@ public class TestCodepointSetGenerator extends RandomizedTest {
 
     @Test
     public void testSurrogatesInConstructor() {
-      new CodepointSetGenerator(withSurrogates.toCharArray());
+      assertThrows(IllegalArgumentException.class, () -> {
+        new CodepointSetGenerator(withSurrogates.toCharArray());
+      });
     }
   }
 
@@ -105,7 +107,9 @@ public class TestCodepointSetGenerator extends RandomizedTest {
 
     @Test
     public void testOddCodePoints() {
-      generator.ofCodeUnitsLength(getRandom(), 3, 3);
+      assertThrows(IllegalArgumentException.class, () -> {
+        generator.ofCodeUnitsLength(getRandom(), 3, 3);
+      });
     }
 
     @Override

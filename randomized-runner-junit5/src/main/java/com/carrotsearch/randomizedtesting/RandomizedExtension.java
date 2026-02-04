@@ -207,9 +207,9 @@ public class RandomizedExtension implements
     if (randomizedContext != null && runnerRandomness != null) {
       Method testMethod = context.getRequiredTestMethod();
 
-      // Determine test seed
+      // Determine test seed - use the same RandomSupplier as the runner
       long testSeed = determineTestSeed(testMethod, runnerRandomness);
-      Randomness testRandomness = new Randomness(testSeed, RandomSupplier.DEFAULT);
+      Randomness testRandomness = new Randomness(testSeed, runnerRandomness.getRandomSupplier());
       store.put(KEY_RANDOMNESS, testRandomness);
 
       // Push test-level randomness
