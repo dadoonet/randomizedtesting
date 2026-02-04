@@ -65,6 +65,7 @@ public class RandomizedExtension implements
     BeforeEachCallback,
     AfterEachCallback,
     TestExecutionExceptionHandler,
+    LifecycleMethodExecutionExceptionHandler,
     InvocationInterceptor,
     TestInstancePostProcessor,
     ExecutionCondition {
@@ -319,6 +320,46 @@ public class RandomizedExtension implements
   }
 
   @Override
+  public void handleBeforeAllMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+    augmentStackTraceFromContext(context, throwable);
+    throw throwable;
+  }
+
+  @Override
+  public void handleAfterAllMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+    augmentStackTraceFromContext(context, throwable);
+    throw throwable;
+  }
+
+  @Override
+  public void handleBeforeEachMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+    augmentStackTraceFromContext(context, throwable);
+    throw throwable;
+  }
+
+  @Override
+  public void handleAfterEachMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+    augmentStackTraceFromContext(context, throwable);
+    throw throwable;
+  }
+
+  /**
+   * Helper method to augment stack trace with seed information from context.
+   */
+  private void augmentStackTraceFromContext(ExtensionContext context, Throwable throwable) {
+    Store store = context.getStore(NAMESPACE);
+    Randomness runnerRandomness = store.get(KEY_RUNNER_RANDOMNESS, Randomness.class);
+    Randomness testRandomness = store.get(KEY_RANDOMNESS, Randomness.class);
+
+    if (runnerRandomness != null) {
+      Randomness[] seeds = testRandomness != null ?
+          new Randomness[]{runnerRandomness, testRandomness} :
+          new Randomness[]{runnerRandomness};
+      augmentStackTrace(throwable, seeds);
+    }
+  }
+
+  @Override
   public void interceptTestMethod(Invocation<Void> invocation,
                                   ReflectiveInvocationContext<Method> invocationContext,
                                   ExtensionContext extensionContext) throws Throwable {
@@ -370,6 +411,12 @@ public class RandomizedExtension implements
       throw cause != null ? cause : e;
     } finally {
       executor.shutdownNow();
+      // Wait for the executor thread to terminate to avoid thread leak detection issues
+      try {
+        executor.awaitTermination(1000, java.util.concurrent.TimeUnit.MILLISECONDS);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+      }
     }
   }
   
