@@ -39,7 +39,8 @@ public class TestNightlyMode extends WithNestedTestClass {
 
   @Test
   public void dailyDefault() {
-    checkTestsOutput(2, 0, 1, 1, Nested.class);
+    // In JUnit 5, tests disabled by ExecutionCondition are counted as ignored, not assumption
+    checkTestsOutput(1, 1, 1, 0, Nested.class);
   }
 
   @BeforeEach
