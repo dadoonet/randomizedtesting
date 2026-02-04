@@ -3,11 +3,16 @@ package com.carrotsearch.randomizedtesting;
 import java.util.*;
 
 import org.assertj.core.api.Assertions;
-import org.junit.*;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.carrotsearch.randomizedtesting.annotations.SeedDecorators;
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test seed decorators.
@@ -16,9 +21,9 @@ public class TestSeedDecorator extends WithNestedTestClass {
   private static List<String> runnerSeeds = new ArrayList<String>();
   private static List<String> strings = new ArrayList<String>();
   
-  @RunWith(RandomizedRunner.class)
+  @ExtendWith(RandomizedExtension.class)
   public static class Nested1 {
-    @BeforeClass
+    @BeforeAll
     public static void generateSequence() {
       strings.add(RandomStrings.randomAsciiLettersOfLength(RandomizedContext.current().getRandom(), 200));
     }
@@ -42,7 +47,7 @@ public class TestSeedDecorator extends WithNestedTestClass {
   public static class Nested4 extends Nested3 {
   }
 
-  @Before @After
+  @BeforeEach @AfterEach
   public void cleanup() {
     runnerSeeds.clear();
     strings.clear();
@@ -58,8 +63,8 @@ public class TestSeedDecorator extends WithNestedTestClass {
     runTests(Nested1.class, Nested2.class, Nested3.class, Nested4.class);
 
     // All four classes get the same initial "runner" seed.
-    Assert.assertEquals(4, runnerSeeds.size());
-    Assert.assertEquals(1, new HashSet<String>(runnerSeeds).toArray().length);
+    assertEquals(4, runnerSeeds.size());
+    assertEquals(1, new HashSet<String>(runnerSeeds).toArray().length);
 
     // @BeforeClass scope strings for Nested1 and Nested2 should be the same
     // because these classes share identical main seed.
