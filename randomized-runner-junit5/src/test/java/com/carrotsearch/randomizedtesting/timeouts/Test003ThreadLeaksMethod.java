@@ -1,8 +1,7 @@
 package com.carrotsearch.randomizedtesting.timeouts;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.Utils;
@@ -12,6 +11,8 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test003ThreadLeaksMethod extends WithNestedTestClass {
   @ThreadLeakScope(Scope.TEST)
@@ -50,7 +51,7 @@ public class Test003ThreadLeaksMethod extends WithNestedTestClass {
 
     FullResult r = runTests(Nested.class);
     Utils.assertFailureWithMessage(r, "1 thread leaked from " + scope.toString() + " scope at");
-    Assert.assertEquals(1, r.getFailureCount());
+    assertEquals(1, r.getFailureCount());
     Utils.assertFailuresContainSeeds(r);
     Utils.assertNoLiveThreadsContaining("foobar");
 
@@ -58,4 +59,3 @@ public class Test003ThreadLeaksMethod extends WithNestedTestClass {
       .doesNotContain("Uncaught exception");
   }
 }
-
