@@ -138,11 +138,6 @@ public class RandomizedExtension implements
   );
 
   /**
-   * A marker for flagging zombie threads (leaked threads that couldn't be killed).
-   */
-  static AtomicBoolean zombieMarker = new AtomicBoolean(false);
-
-  /**
    * The "main" thread group we will be tracking (including subgroups).
    */
   static final ThreadGroup mainThreadGroup = Thread.currentThread().getThreadGroup();
@@ -153,6 +148,11 @@ public class RandomizedExtension implements
 
   @Override
   public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+    // Check for zombie threads from previous tests
+    if (ThreadLeakControl.hasZombieThreads()) {
+      return ConditionEvaluationResult.disabled("Skipped due to zombie threads from previous tests");
+    }
+    
     // Check class filter
     String classFilter = System.getProperty(SYSPROP_TESTCLASS());
     if (classFilter != null && !classFilter.isEmpty()) {
@@ -1015,6 +1015,6 @@ public class RandomizedExtension implements
    * Returns true if any previous (or current) suite has left zombie threads.
    */
   public static boolean hasZombieThreads() {
-    return zombieMarker.get();
+    return ThreadLeakControl.hasZombieThreads();
   }
 }

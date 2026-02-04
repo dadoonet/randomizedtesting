@@ -290,6 +290,13 @@ public class ThreadLeakControl {
   }
 
   /**
+   * Reset the zombie marker. This is mainly for testing purposes.
+   */
+  public static void resetZombieMarker() {
+    zombieMarker.set(false);
+  }
+
+  /**
    * Initialize suite-level leak control for the given class.
    */
   public void initializeSuite(Class<?> suiteClass) throws Exception {
