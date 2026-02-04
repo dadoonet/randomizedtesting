@@ -1,22 +1,25 @@
 package com.carrotsearch.randomizedtesting.timeouts;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.junit.runner.JUnitCore;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedExtension;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.WithNestedTestClass;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
- * Checks custom thread ignore policy.
+ * Checks that stack traces are logged when threads are leaked during a timeout.
  */
 public class Test018TimeoutStacks extends WithNestedTestClass {
+  
+  @ExtendWith(RandomizedExtension.class)
   @ThreadLeakScope(Scope.TEST)
   @TimeoutSuite(millis = 1000)
-  public static class Nested1 {
+  public static class Nested1 extends RandomizedTest {
     @Test
     public void testFooBars() throws Exception {
       assumeRunningNested();
@@ -29,8 +32,7 @@ public class Test018TimeoutStacks extends WithNestedTestClass {
 
   @Test
   public void testExceptionInFilter() throws Throwable {
-    new JUnitCore().run(new RandomizedRunner(Nested1.class));
+    runTests(Nested1.class);
     Assertions.assertThat(getLoggingMessages()).contains("sleepForever(");
-    // sysout.println(getLoggingMessages());
   }    
 }
