@@ -1,12 +1,15 @@
 package com.carrotsearch.randomizedtesting;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.carrotsearch.randomizedtesting.extensions.RepeatExtension;
 
-@RunWith(RandomizedRunner.class)
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@ExtendWith(RandomizedExtension.class)
 public class TestFormattingRandomSeeds {
   @Test
   public void minusOne() {
@@ -24,7 +27,8 @@ public class TestFormattingRandomSeeds {
   }
 
   /** Heck, why not use ourselves here? ;) */
-  @Test
+  @TestTemplate
+  @ExtendWith(RepeatExtension.class)
   @Repeat(iterations = 1000)
   public void noise() {
     check(RandomizedContext.current().getRandom().nextLong());
@@ -32,6 +36,6 @@ public class TestFormattingRandomSeeds {
 
   private void check(long seed) {
     String asString = SeedUtils.formatSeedChain(new Randomness(seed, RandomSupplier.DEFAULT));
-    Assert.assertEquals(seed, SeedUtils.parseSeedChain(asString)[0]);
+    assertEquals(seed, SeedUtils.parseSeedChain(asString)[0]);
   }
 }
