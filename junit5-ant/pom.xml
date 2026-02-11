@@ -65,6 +65,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- Embedded into standalone JAR (shaded). -->
 
     <dependency>
@@ -111,6 +117,7 @@
             <excludes>
               <exclude>**/tests/**</exclude>
               <exclude>**/it/**</exclude>
+              <exclude>**/spikes/**</exclude>
             </excludes>
           </configuration>
 
@@ -215,7 +222,7 @@
           </execution>
         </executions>
         <configuration>
-          <includeGroupIds>com.carrotsearch.randomizedtesting,org.junit.jupiter,org.junit.platform,org.opentest4j,org.ow2.asm</includeGroupIds>
+          <includeGroupIds>com.carrotsearch.randomizedtesting,org.junit.jupiter,org.junit.platform,org.junit.vintage,org.opentest4j,org.ow2.asm,junit,org.hamcrest</includeGroupIds>
         </configuration>
       </plugin>
 

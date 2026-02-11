@@ -1,9 +1,9 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
- * Check JVM logging settings. Thet seem to use process descriptors not
+ * Check JVM logging settings. They seem to use process descriptors not
  * {@link System} streams.
  */
 public class TestJvmLogging extends JUnit5XmlTestBase {

@@ -1,43 +1,42 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 /**
  * A base class for tests contained in <code>junit5.xml</code>
  * file.
  */
+@ExtendWith(JUnit5XmlTestBase.DumpLogOnError.class)
 public class JUnit5XmlTestBase extends AntBuildFileTestBase {
-  @Rule
-  public TestRule dumpLogOnError = new TestRule() {
+  
+  /**
+   * Extension that dumps the Ant log on test failure.
+   */
+  public static class DumpLogOnError implements TestWatcher {
     @Override
-    public Statement apply(final Statement base, Description description) {
-      return new Statement() {
-        @Override
-        public void evaluate() throws Throwable {
+    public void testFailed(ExtensionContext context, Throwable cause) {
+      // Get the test instance to access the log
+      context.getTestInstance().ifPresent(instance -> {
+        if (instance instanceof JUnit5XmlTestBase) {
           try {
-            base.evaluate();
-          } catch (Throwable e) {
-            System.out.println("Ant log: " + getLog());
-            throw e;
+            System.out.println("Ant log: " + ((JUnit5XmlTestBase) instance).getLog());
+          } catch (Exception e) {
+            System.out.println("Could not retrieve Ant log: " + e.getMessage());
           }
         }
-      };
+      });
     }
-  };
+  }
   
-  @Before
+  @BeforeEach
   public void setUp() throws Exception {
     URI resource = getClass().getClassLoader().getResource("junit5.xml").toURI();
     if (!resource.getScheme().equals("file")) {

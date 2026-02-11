@@ -1,9 +1,6 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-
-import org.junit.Ignore;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 
 public class TestOnNonEmptyWorkDirectory extends JUnit5XmlTestBase {
   @Test 

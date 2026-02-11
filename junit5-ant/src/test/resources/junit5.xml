@@ -6,6 +6,7 @@
         <fileset dir="..">
             <include name="dependency/junit-*.jar" />
             <include name="dependency/hamcrest-*.jar" />
+            <include name="dependency/opentest4j-*.jar" />
         </fileset>
     </path>
 

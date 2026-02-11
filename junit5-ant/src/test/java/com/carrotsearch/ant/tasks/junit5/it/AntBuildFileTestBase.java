@@ -1,6 +1,6 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.assertj.core.api.Assertions.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -16,8 +16,7 @@ import org.apache.tools.ant.launch.Launcher;
 import org.apache.tools.ant.taskdefs.Java;
 import org.apache.tools.ant.types.Path;
 import org.apache.tools.ant.util.LoaderUtils;
-import org.junit.After;
-import org.junit.Assert;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * An equivalent of <code>BuildFileTest</code> for JUnit5.
@@ -61,7 +60,7 @@ public class AntBuildFileTestBase {
     }
   }
   
-  @After
+  @AfterEach
   public void restoreSysouts() {
     if (restoreSysout != null) System.setOut(restoreSysout);
     if (restoreSyserr != null) System.setErr(restoreSyserr);
@@ -76,13 +75,11 @@ public class AntBuildFileTestBase {
   }
   
   protected final void assertLogContains(String substring) {
-    Assert.assertTrue("Log did not contain: '" + substring + "'", getLog()
-        .contains(substring));
+    assertThat(getLog()).as("Log should contain: '%s'", substring).contains(substring);
   }
 
   protected final void assertLogDoesNotContain(String substring) {
-    Assert.assertTrue("Log contained: '" + substring + "'", 
-        !getLog().contains(substring));
+    assertThat(getLog()).as("Log should not contain: '%s'", substring).doesNotContain(substring);
   }
 
   protected final String getLog() {
@@ -97,11 +94,11 @@ public class AntBuildFileTestBase {
       String message, String... additionalMessages) {
         try {
           executeTarget(target);
-          Assert.fail("Expected a build failure with message: " + message);
+          fail("Expected a build failure with message: " + message);
         } catch (BuildException e) {
-          Assert.assertThat(e.getMessage(), containsString(message));
+          assertThat(e.getMessage()).contains(message);
           for (String m : additionalMessages) {
-            Assert.assertThat(e.getMessage(), containsString(m));
+            assertThat(e.getMessage()).contains(m);
           }
         }
       }

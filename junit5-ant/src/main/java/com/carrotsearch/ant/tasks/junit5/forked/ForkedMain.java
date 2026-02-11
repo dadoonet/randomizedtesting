@@ -527,7 +527,7 @@ public class ForkedMain {
             serializer.serialize(new AppendStdOutEvent(b, off, len));
             if (flushFrequently) serializer.flush();
           }
-        })));
+        }), true)); // autoFlush enabled
 
         System.setErr(new PrintStream(new BufferedOutputStream(new ChunkedStream() {
           @Override
@@ -538,7 +538,7 @@ public class ForkedMain {
             serializer.serialize(new AppendStdErrEvent(b, off, len));
             if (flushFrequently) serializer.flush();
           }
-        })));
+        }), true)); // autoFlush enabled
         return null;
       }
     });

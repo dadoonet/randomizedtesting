@@ -1,8 +1,6 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 
 public class TestStackOverflowInEventEmitter  extends JUnit5XmlTestBase {
   @Test

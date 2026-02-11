@@ -1,14 +1,13 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-
 import java.util.HashMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.*;
 
 public class TestPickSeed extends JUnit5XmlTestBase {
   
@@ -36,12 +35,12 @@ public class TestPickSeed extends JUnit5XmlTestBase {
       props.put(key, values);
     }
     
-    Assert.assertEquals(props.get("prefix.dummy1"), props.get("replaced.dummy1"));
-    Assert.assertEquals(props.get("prefix.dummy2"), props.get("replaced.dummy2"));
+    assertThat(props.get("prefix.dummy1")).isEqualTo(props.get("replaced.dummy1"));
+    assertThat(props.get("prefix.dummy2")).isEqualTo(props.get("replaced.dummy2"));
 
     // At least two unique values.
-    Assert.assertTrue(props.get("prefix.dummy1").size() >= 2);
+    assertThat(props.get("prefix.dummy1").size()).isGreaterThanOrEqualTo(2);
     // null (missing value) should be there.
-    Assert.assertTrue(props.get("prefix.dummy2").contains("null"));
+    assertThat(props.get("prefix.dummy2")).contains("null");
   }
 }

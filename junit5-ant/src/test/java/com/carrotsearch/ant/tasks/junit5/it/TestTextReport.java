@@ -1,13 +1,13 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-
 import java.util.regex.Pattern;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.ant.tasks.junit5.tests.FailInAfterClass;
 import com.carrotsearch.ant.tasks.junit5.tests.ReasonForAssumptionIgnored;
+
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * Test report-text listener.
@@ -18,7 +18,7 @@ public class TestTextReport extends JUnit5XmlTestBase {
     super.executeTarget("suiteerror");
     
     int count = countPattern(getLog(), FailInAfterClass.MESSAGE);
-    Assert.assertEquals(1, count);
+    assertThat(count).isEqualTo(1);
   }
 
   @Test 
@@ -33,17 +33,17 @@ public class TestTextReport extends JUnit5XmlTestBase {
   public void reasonForIgnoredByDisabledGroup() {
     super.executeTarget("reasonForIgnoredByDisabledGroup");
     String log = getLog();
-    Assert.assertTrue(log.contains("(@DisabledGroup(value=foo bar))") ||
-                      log.contains("(@DisabledGroup(value=\"foo bar\"))"));
+    assertThat(log.contains("(@DisabledGroup(value=foo bar))") ||
+               log.contains("(@DisabledGroup(value=\"foo bar\"))")).isTrue();
   }
 
-	@Test 
-	public void reasonForSuiteAssumptionIgnored() {
-	  super.executeTarget("reasonForSuiteAssumptionIgnored");
+  @Test 
+  public void reasonForSuiteAssumptionIgnored() {
+    super.executeTarget("reasonForSuiteAssumptionIgnored");
 
-	  int count = countPattern(getLog(), ReasonForAssumptionIgnored.MESSAGE);
-    Assert.assertEquals(2, count);
-	}
+    int count = countPattern(getLog(), ReasonForAssumptionIgnored.MESSAGE);
+    assertThat(count).isEqualTo(2);
+  }
 
   @Test 
   public void listeners() {
@@ -55,8 +55,8 @@ public class TestTextReport extends JUnit5XmlTestBase {
   @Test 
   public void timestamps() {
     super.executeTarget("timestamps");
-    Assert.assertTrue(getLog(),
-        Pattern.compile("\\[([0-9]{2}):([0-9]{2}):([0-9]{2})\\.([0-9]{3})\\]").matcher(getLog()).find());
+    assertThat(Pattern.compile("\\[([0-9]{2}):([0-9]{2}):([0-9]{2})\\.([0-9]{3})\\]").matcher(getLog()).find())
+        .as("Log should contain timestamp pattern").isTrue();
   }
   
   @Test 
@@ -75,9 +75,8 @@ public class TestTextReport extends JUnit5XmlTestBase {
     assertLogContains("beforeclass-sysout");
     assertLogContains("test-sysout");
     String log = getLog();
-    Assert.assertTrue(
-        log.indexOf("1> test-sysout") <
-        log.indexOf("Suite execution timed out:"));
+    assertThat(log.indexOf("1> test-sysout"))
+        .isLessThan(log.indexOf("Suite execution timed out:"));
   }
 
   @Test 

@@ -1,11 +1,9 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.ant.tasks.junit5.tests.TestAfterClassError;
 import com.carrotsearch.ant.tasks.junit5.tests.TestBeforeClassError;
-
 
 public class TestMiscJUnit5Attributes extends JUnit5XmlTestBase {
   @Test 

@@ -9,36 +9,36 @@ public class UserDefinedRunListener2 implements TestExecutionListener {
 
     @Override
     public void testPlanExecutionStarted(TestPlan testPlan) {
-        System.out.print("UserDefinedRunListener2.testPlanExecutionStarted()");
+        System.out.println("UserDefinedRunListener2.testPlanExecutionStarted()");
     }
 
     @Override
     public void testPlanExecutionFinished(TestPlan testPlan) {
-        System.out.print("UserDefinedRunListener2.testPlanExecutionFinished()");
+        System.out.println("UserDefinedRunListener2.testPlanExecutionFinished()");
     }
 
     @Override
     public void executionStarted(TestIdentifier testIdentifier) {
-        if (!testIdentifier.isContainer()) {
-            System.out.print("UserDefinedRunListener2.executionStarted()");
+        if (testIdentifier.isTest()) {
+            System.out.println("UserDefinedRunListener2.executionStarted()");
         }
     }
 
     @Override
     public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult result) {
-        if (!testIdentifier.isContainer()) {
-            System.out.print("UserDefinedRunListener2.executionFinished()");
+        if (testIdentifier.isTest()) {
+            System.out.println("UserDefinedRunListener2.executionFinished()");
             if (result.getStatus() == TestExecutionResult.Status.FAILED) {
-                System.out.print("UserDefinedRunListener2.testFailure()");
+                System.out.println("UserDefinedRunListener2.testFailure()");
             } else if (result.getStatus() == TestExecutionResult.Status.ABORTED) {
-                System.out.print("UserDefinedRunListener2.testAssumptionFailure()");
+                System.out.println("UserDefinedRunListener2.testAssumptionFailure()");
             }
         }
     }
 
     @Override
     public void executionSkipped(TestIdentifier testIdentifier, String reason) {
-        System.out.print("UserDefinedRunListener2.executionSkipped()");
+        System.out.println("UserDefinedRunListener2.executionSkipped()");
     }
 
 }

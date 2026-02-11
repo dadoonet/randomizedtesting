@@ -1,8 +1,6 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 
 public class TestPreconditions extends JUnit5XmlTestBase {
   @Test 
@@ -12,19 +10,20 @@ public class TestPreconditions extends JUnit5XmlTestBase {
   
   @Test 
   public void oldjunit() {
+    // With JUnit 5 Platform, the forked JVM check remains for junit5 JAR presence
     executeForkedTarget("oldjunit");
-    assertLogContains("Forked JVM's classpath must use JUnit 4.10 or newer");
+    assertLogContains("Forked JVM's classpath must include a junit5 JAR");
   }
 
   @Test 
   public void nojunit_task() {
     executeForkedTarget("nojunit-task");
-    assertLogContains("JUnit JAR must be added to junit5 taskdef's classpath");
+    assertLogContains("JUnit 5 Platform must be added to junit5 taskdef's classpath");
   }
 
   @Test 
   public void oldjunit_task() {
     executeForkedTarget("oldjunit-task");
-    assertLogContains("At least JUnit version 4.10 is required on junit5's taskdef classpath");
+    assertLogContains("JUnit 5 Platform must be added to junit5 taskdef's classpath");
   }
 }

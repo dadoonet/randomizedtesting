@@ -1,14 +1,13 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.*;
 
 import java.io.File;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.simpleframework.xml.Attribute;
 import org.simpleframework.xml.Element;
 import org.simpleframework.xml.Order;
@@ -46,11 +45,11 @@ public class TestAntXmlReport  extends JUnit5XmlTestBase {
     super.executeTarget("antxml");
 
     // Simple check for existence.
-    Assert.assertTrue(
-        new File(getProject().getBaseDir(), "ant-xmls/TEST-com.carrotsearch.ant.tasks.junit5.tests.TestBeforeClassError.xml").length() > 0);
+    assertThat(new File(getProject().getBaseDir(), "ant-xmls/TEST-com.carrotsearch.ant.tasks.junit5.tests.TestBeforeClassError.xml").length())
+        .isGreaterThan(0);
 
-    Assert.assertTrue(
-        new File(getProject().getBaseDir(), "ant-xmls/TEST-com.carrotsearch.ant.tasks.junit5.tests.replication.TestSuiteReplicated-2.xml").length() > 0);
+    assertThat(new File(getProject().getBaseDir(), "ant-xmls/TEST-com.carrotsearch.ant.tasks.junit5.tests.replication.TestSuiteReplicated-2.xml").length())
+        .isGreaterThan(0);
 
     // Check for warning messages about duplicate suites.
     assertLogContains("Duplicate suite name used with XML reports");
@@ -74,24 +73,24 @@ public class TestAntXmlReport  extends JUnit5XmlTestBase {
     File parent = getProject().getBaseDir();
 
     MavenFailsafeSummaryModel_Local m1 = p.read(MavenFailsafeSummaryModel_Local.class, new File(parent, "ant-xmls2/summary1.xml"));
-    assertEquals(255, (int) m1.result);
-    assertEquals(5, m1.completed);
-    assertEquals(2, m1.skipped);
-    assertEquals(1, m1.errors);
-    assertEquals(1, m1.failures);
+    assertThat(m1.result).isEqualTo(255);
+    assertThat(m1.completed).isEqualTo(5);
+    assertThat(m1.skipped).isEqualTo(2);
+    assertThat(m1.errors).isEqualTo(1);
+    assertThat(m1.failures).isEqualTo(1);
     
     m1 = p.read(MavenFailsafeSummaryModel_Local.class, new File(parent, "ant-xmls2/summary2.xml"));
-    assertEquals(null, m1.result);
-    assertEquals(1, m1.completed);
-    assertEquals(0, m1.skipped);
-    assertEquals(0, m1.errors);
-    assertEquals(0, m1.failures);
+    assertThat(m1.result).isNull();
+    assertThat(m1.completed).isEqualTo(1);
+    assertThat(m1.skipped).isEqualTo(0);
+    assertThat(m1.errors).isEqualTo(0);
+    assertThat(m1.failures).isEqualTo(0);
 
     m1 = p.read(MavenFailsafeSummaryModel_Local.class, new File(parent, "ant-xmls2/summary3.xml"));
-    assertEquals(254, (int) m1.result);
-    assertEquals(0, m1.completed);
-    assertEquals(0, m1.skipped);
-    assertEquals(0, m1.errors);
-    assertEquals(0, m1.failures);
+    assertThat(m1.result).isEqualTo(254);
+    assertThat(m1.completed).isEqualTo(0);
+    assertThat(m1.skipped).isEqualTo(0);
+    assertThat(m1.errors).isEqualTo(0);
+    assertThat(m1.failures).isEqualTo(0);
   }  
 }

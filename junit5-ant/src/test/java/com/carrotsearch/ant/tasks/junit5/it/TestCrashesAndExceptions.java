@@ -1,15 +1,13 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-
 import java.io.File;
 
 import org.apache.tools.ant.BuildException;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.containsString;
-
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestCrashesAndExceptions extends JUnit5XmlTestBase {
   @Test
@@ -23,14 +21,14 @@ public class TestCrashesAndExceptions extends JUnit5XmlTestBase {
   public void jvmcrash() {
     try {
       executeTarget("jvmcrash");
-      Assert.fail("Expected a build failure.");
+      fail("Expected a build failure.");
     } catch (BuildException e) {
       String log = getLog();
       if (log.contains("java.lang.UnsatisfiedLinkError: Could not link with crashlib")) {
         // ignore
-        Assume.assumeTrue(false);
+        Assumptions.assumeTrue(false);
       }
-      Assert.assertThat(e.getMessage(), containsString("was not empty, see:"));
+      assertThat(e.getMessage()).contains("was not empty, see:");
     }
 
     File cwd = getProject().getBaseDir();

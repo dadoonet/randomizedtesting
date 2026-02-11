@@ -2,7 +2,7 @@ package com.carrotsearch.ant.tasks.junit5.it;
 
 import java.io.IOException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.carrotsearch.ant.tasks.junit5.tests.FireUnhandledRunnerException;
 

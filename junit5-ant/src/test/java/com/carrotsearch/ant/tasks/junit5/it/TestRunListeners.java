@@ -1,6 +1,6 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestRunListeners extends JUnit5XmlTestBase {
 
@@ -8,19 +8,19 @@ public class TestRunListeners extends JUnit5XmlTestBase {
     public void singleUserDefinedRunListener() {
         super.executeTarget("singleUserDefinedRunListener");
 
-        assertLogContains("UserDefinedRunListener1.testStarted()");
-        assertLogContains("UserDefinedRunListener1.testFinished()");
+        assertLogContains("UserDefinedRunListener1.executionStarted()");
+        assertLogContains("UserDefinedRunListener1.executionFinished()");
     }
 
     @Test
     public void multipleUserDefinedRunListeners() {
         super.executeTarget("multipleUserDefinedRunListeners");
 
-        assertLogContains("UserDefinedRunListener2.testStarted()");
-        assertLogContains("UserDefinedRunListener2.testFinished()");
+        assertLogContains("UserDefinedRunListener2.executionStarted()");
+        assertLogContains("UserDefinedRunListener2.executionFinished()");
 
-        assertLogContains("UserDefinedRunListener3.testStarted()");
-        assertLogContains("UserDefinedRunListener3.testFinished()");
+        assertLogContains("UserDefinedRunListener3.executionStarted()");
+        assertLogContains("UserDefinedRunListener3.executionFinished()");
     }
 
 }

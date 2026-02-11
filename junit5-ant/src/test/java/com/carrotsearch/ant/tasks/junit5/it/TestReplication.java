@@ -1,13 +1,13 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.*;
 
 public class TestReplication extends JUnit5XmlTestBase {
   @Test
@@ -40,7 +40,7 @@ public class TestReplication extends JUnit5XmlTestBase {
     for (int i = 0; i < 100; i++) {
       Pattern p = Pattern.compile("(Test " + i + " executed on VM )([0-9]+)");
       Matcher m = p.matcher(log);
-      Assert.assertTrue(m.find());
+      assertThat(m.find()).isTrue();
       int jvm = Integer.parseInt(m.group(2));
 
       HashSet<Integer> s = new HashSet<Integer>(Arrays.asList(0, 1, 2));

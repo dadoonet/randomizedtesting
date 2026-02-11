@@ -1,12 +1,6 @@
 package com.carrotsearch.ant.tasks.junit5.it;
 
-
-import com.carrotsearch.ant.tasks.junit5.tests.FailInAfterClass;
-import com.carrotsearch.ant.tasks.junit5.tests.ReasonForAssumptionIgnored;
-import org.junit.Assert;
-import org.junit.Test;
-
-import java.util.regex.Pattern;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test report-text listener.
